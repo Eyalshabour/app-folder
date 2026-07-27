@@ -2,15 +2,6 @@
   "_comment": "Registry of available menu templates. Add more entries here as new menu styles are built.",
   "templates": [
     {
-      "id": "voyage_shabour",
-      "name": "The Voyage Shabour (tasting menu)",
-      "layout_config": "config/templates/voyage_shabour.json",
-      "languages": [
-        "en",
-        "fr"
-      ]
-    },
-    {
       "id": "aperitifs_voyage",
       "name": "Le Voyage Shabour (aperitifs & pricing)",
       "layout_config": "config/templates/aperitifs_voyage.json",

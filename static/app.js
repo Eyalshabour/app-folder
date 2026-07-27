@@ -5,6 +5,7 @@ const itemTpl = document.getElementById("item-template");
 const simpleFieldTpl = document.getElementById("simple-field-template");
 const lineItemTpl = document.getElementById("line-item-template");
 const spacerRowTpl = document.getElementById("spacer-row-template");
+const headingRowTpl = document.getElementById("heading-row-template");
 const saveBtn = document.getElementById("save-btn");
 const saveStatus = document.getElementById("save-status");
 const templateSelect = document.getElementById("template-select");
@@ -397,6 +398,14 @@ function renderCourseMenu() {
   titleInput.addEventListener("input", () => { menuState.title = titleInput.value; });
   root.appendChild(titleNode);
 
+  const subtitleNode = simpleFieldTpl.content.cloneNode(true);
+  const subtitleInput = subtitleNode.querySelector(".simple-field-input");
+  subtitleNode.querySelector(".simple-field-label").textContent = "Subtitle (optional)";
+  subtitleInput.value = menuState.subtitle || "";
+  subtitleInput.placeholder = "Subtitle (optional)";
+  subtitleInput.addEventListener("input", () => { menuState.subtitle = subtitleInput.value; });
+  root.appendChild(subtitleNode);
+
   root.appendChild(buildGroup("Courses", "courses"));
   root.appendChild(buildGroup("Dessert", "dessert"));
 }
@@ -404,6 +413,7 @@ function renderCourseMenu() {
 // Simple text fields shown at the top of a price-card menu, in order.
 const PRICE_CARD_FIELDS = [
   { key: "title", label: "Menu Title" },
+  { key: "subtitle", label: "Subtitle (optional)" },
   { key: "price", label: "Price" },
   { key: "subprice", label: "Additional Price Line (optional)" },
   { key: "accord_header", label: "Wine Pairing Heading" },
@@ -420,10 +430,49 @@ function renderPriceCardMenu() {
     input.placeholder = label;
     input.addEventListener("input", () => { menuState[key] = input.value; });
     root.appendChild(node);
+
+    // Wine Pairing Price is one line by default; let the user add more
+    // (e.g. a separate "Doucers" price) instead of cramming them into one
+    // field with a manual "/" separator.
+    if (key === "accord_price") {
+      root.appendChild(buildAccordExtraLines());
+    }
   });
 
   root.appendChild(buildLinesGroup("Drinks List", "items"));
   root.appendChild(buildFooterGroup());
+}
+
+function buildAccordExtraLines() {
+  const node = groupTpl.content.cloneNode(true);
+  node.querySelector(".group-heading").textContent = "Additional Wine Pairing Lines (optional)";
+  const itemsList = node.querySelector(".items-list");
+  const addBtn = node.querySelector(".add-item-button");
+  addBtn.textContent = "+ Add a Line";
+
+  if (!menuState.accord_extra_lines) menuState.accord_extra_lines = [];
+
+  menuState.accord_extra_lines.forEach((text, iIdx) => {
+    const row = lineItemTpl.content.cloneNode(true);
+    const input = row.querySelector(".line-input");
+    input.value = text || "";
+    input.placeholder = "e.g. Doucers 49 €";
+    input.addEventListener("input", () => { menuState.accord_extra_lines[iIdx] = input.value; });
+    const removeBtn = row.querySelector(".remove-item-button");
+    removeBtn.parentNode.insertBefore(buildMoveControls(menuState.accord_extra_lines, iIdx, "line"), removeBtn);
+    removeBtn.addEventListener("click", () => {
+      menuState.accord_extra_lines.splice(iIdx, 1);
+      renderMenu();
+    });
+    itemsList.appendChild(row);
+  });
+
+  addBtn.addEventListener("click", () => {
+    menuState.accord_extra_lines.push("");
+    renderMenu();
+  });
+
+  return node;
 }
 
 function buildLinesGroup(heading, key) {
@@ -444,6 +493,16 @@ function buildLinesGroup(heading, key) {
     renderMenu();
   });
 
+  const headingBtn = document.createElement("button");
+  headingBtn.type = "button";
+  headingBtn.className = "add-item-button add-heading-button";
+  headingBtn.textContent = "+ Add a Sub-heading (e.g. Champagnes)";
+  headingBtn.addEventListener("click", () => {
+    menuState[key].push({ heading: "" });
+    renderMenu();
+  });
+  node.querySelector(".menu-group").appendChild(headingBtn);
+
   const spacerBtn = document.createElement("button");
   spacerBtn.type = "button";
   spacerBtn.className = "add-item-button add-spacer-button";
@@ -460,7 +519,22 @@ function buildLinesGroup(heading, key) {
 function buildLineRow(key, iIdx, line) {
   if (line.blank) {
     const node = spacerRowTpl.content.cloneNode(true);
-    node.querySelector(".remove-item-button").addEventListener("click", () => {
+    const removeBtn = node.querySelector(".remove-item-button");
+    removeBtn.parentNode.insertBefore(buildMoveControls(menuState[key], iIdx, "line"), removeBtn);
+    removeBtn.addEventListener("click", () => {
+      menuState[key].splice(iIdx, 1);
+      renderMenu();
+    });
+    return node;
+  }
+  if (line.heading !== undefined) {
+    const node = headingRowTpl.content.cloneNode(true);
+    const input = node.querySelector(".heading-input");
+    input.value = line.heading || "";
+    input.addEventListener("input", () => { menuState[key][iIdx].heading = input.value; });
+    const removeBtn = node.querySelector(".remove-item-button");
+    removeBtn.parentNode.insertBefore(buildMoveControls(menuState[key], iIdx, "sub-heading"), removeBtn);
+    removeBtn.addEventListener("click", () => {
       menuState[key].splice(iIdx, 1);
       renderMenu();
     });
@@ -470,7 +544,9 @@ function buildLineRow(key, iIdx, line) {
   const input = node.querySelector(".line-input");
   input.value = line.text || "";
   input.addEventListener("input", () => { menuState[key][iIdx].text = input.value; });
-  node.querySelector(".remove-item-button").addEventListener("click", () => {
+  const removeBtn = node.querySelector(".remove-item-button");
+  removeBtn.parentNode.insertBefore(buildMoveControls(menuState[key], iIdx, "line"), removeBtn);
+  removeBtn.addEventListener("click", () => {
     menuState[key].splice(iIdx, 1);
     renderMenu();
   });
@@ -491,7 +567,9 @@ function buildFooterGroup() {
     const input = row.querySelector(".line-input");
     input.value = text || "";
     input.addEventListener("input", () => { menuState.footer_lines[iIdx] = input.value; });
-    row.querySelector(".remove-item-button").addEventListener("click", () => {
+    const removeBtn = row.querySelector(".remove-item-button");
+    removeBtn.parentNode.insertBefore(buildMoveControls(menuState.footer_lines, iIdx, "line"), removeBtn);
+    removeBtn.addEventListener("click", () => {
       menuState.footer_lines.splice(iIdx, 1);
       renderMenu();
     });
@@ -563,7 +641,9 @@ function buildItemRow(key, iIdx, item) {
     node.querySelector(".item-fields").appendChild(wineField);
   }
 
-  node.querySelector(".remove-item-button").addEventListener("click", () => {
+  const removeBtn = node.querySelector(".remove-item-button");
+  removeBtn.parentNode.insertBefore(buildMoveControls(menuState[key], iIdx, "course"), removeBtn);
+  removeBtn.addEventListener("click", () => {
     menuState[key].splice(iIdx, 1);
     renderMenu();
   });

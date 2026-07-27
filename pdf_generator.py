@@ -140,16 +140,38 @@ def _draw_wrapped_centered(c, text, center_x, top_y, max_width, font_name, size,
     return y
 
 
-def _draw_crop_marks(c, x, y, w, h, sheet_w, length=14, gap=6):
-    """Thin trim marks just outside the artwork, so the print shop (or a
-    guillotine) has an unambiguous cut line even though the sheet is larger
-    than the two cards."""
+def _draw_crop_marks(c, x, y, w, h, sheet_w, length=5, gap=2, mid_mark=False):
+    """Small, subtle corner tick marks, so the print shop (or a guillotine)
+    has a cut reference. Off by default -- turned on per-template via
+    cfg["crop_marks"] (visible as a checkbox in the admin panel).
+
+    On these templates the printed sheet is exactly the size of the card(s)
+    (no bleed margin around the outside), so marks drawn just outside the
+    trim edge -- the traditional way -- would fall off the page and never
+    print. Instead each mark is a tiny L-shaped bracket sitting just inside
+    the corner, in the card's own margin whitespace.
+
+    mid_mark also adds a small tick at the sheet's horizontal centre, top
+    and bottom -- only meaningful for two-up layouts, where that's the cut
+    between the two cards."""
     c.setStrokeColorRGB(0.6, 0.6, 0.6)
-    c.setLineWidth(0.4)
-    mid = sheet_w / 2.0
-    for mx in (x, mid, x + w):
-        c.line(mx, y - gap, mx, y - gap - length)              # below
-        c.line(mx, y + h + gap, mx, y + h + gap + length)      # above
+    c.setLineWidth(0.3)
+    top = y + h
+
+    def corner(cx, cy, dx, dy):
+        c.line(cx, cy, cx + dx * length, cy)
+        c.line(cx, cy, cx, cy + dy * length)
+
+    corner(x + gap, y + gap, 1, 1)          # bottom-left
+    corner(x + w - gap, y + gap, -1, 1)     # bottom-right
+    corner(x + gap, top - gap, 1, -1)       # top-left
+    corner(x + w - gap, top - gap, -1, -1)  # top-right
+
+    if mid_mark:
+        mid = sheet_w / 2.0
+        c.line(mid, y + gap, mid, y + gap + length)
+        c.line(mid, top - gap, mid, top - gap - length)
+
     c.setStrokeColorRGB(0, 0, 0)
     c.setLineWidth(1)
 
@@ -176,6 +198,15 @@ def render_card(c, origin_x, cfg, menu_data, body_font, origin_y=0):
 
     y = _draw_display_centered(c, menu_data.get("title", ""), display_font, cfg["title_size"], center_x, y)
     y -= cfg["gap_after_title"]
+
+    if menu_data.get("subtitle"):
+        subtitle_size = cfg.get("subtitle_size", cfg.get("description_size", 10))
+        y = _draw_wrapped_centered(
+            c, menu_data["subtitle"], center_x, y, max_width, body_font,
+            subtitle_size, cfg.get("description_line_height", subtitle_size + 3),
+            cfg.get("subtitle_color", "#555555")
+        )
+        y -= cfg.get("gap_after_subtitle", cfg["gap_after_title"])
 
     y = _draw_divider(c, center_x, y, icon_path, icon_height)
     y -= cfg["gap_after_divider"]
@@ -281,14 +312,8 @@ def generate_pdf(menu_data, cfg, output_path, base_dir):
     overflow_1, _ = render_card(c, offset_x, cfg, menu_data, body_font, offset_y)
     overflow_2, _ = render_card(c, offset_x + card_w, cfg, menu_data, body_font, offset_y)
 
-    # Cut guide down the true centre of the sheet.
-    c.setStrokeColorRGB(0.85, 0.85, 0.85)
-    c.setDash(2, 2)
-    c.line(sheet_w / 2.0, offset_y, sheet_w / 2.0, offset_y + card_h)
-    c.setDash()
-
-    if cfg.get("crop_marks", True):
-        _draw_crop_marks(c, offset_x, offset_y, block_w, card_h, sheet_w)
+    if cfg.get("crop_marks", False):
+        _draw_crop_marks(c, offset_x, offset_y, block_w, card_h, sheet_w, mid_mark=True)
 
     c.showPage()
     c.save()
@@ -324,10 +349,11 @@ def _draw_left_or_center_line(c, text, center_x, y, max_width, font_name, size, 
     c.setFillColorRGB(0, 0, 0)
 
 
-def render_price_card(c, origin_x, cfg, content, body_font, origin_y=0):
+def render_price_card(c, origin_x, cfg, content, body_font, origin_y=0, heading_font=None):
     """Draws one price-card at the given offset. origin_y allows centring the
     card on a sheet taller than the card. Returns True if content overflowed
     the card height."""
+    heading_font = heading_font or body_font
     cw = cfg["card_width"]
     ch = cfg["card_height"]
     center_x = origin_x + cw / 2
@@ -347,6 +373,12 @@ def render_price_card(c, origin_x, cfg, content, body_font, origin_y=0):
     if content.get("title"):
         y = _draw_display_centered(c, content["title"], display_font, cfg["title_size"], center_x, y)
         y -= cfg["gap_after_title"]
+
+    if content.get("subtitle"):
+        subtitle_size = cfg.get("subtitle_size", cfg["price_size"])
+        y -= subtitle_size
+        _draw_left_or_center_line(c, content["subtitle"], center_x, y, max_width, body_font, subtitle_size, "#555555")
+        y -= cfg.get("gap_after_subtitle", cfg["gap_after_price"])
 
     if content.get("price"):
         y -= cfg["price_size"]
@@ -371,6 +403,17 @@ def render_price_card(c, origin_x, cfg, content, body_font, origin_y=0):
         _draw_left_or_center_line(c, content["accord_price"], center_x, y, max_width, body_font, cfg["price_size"], "#111111")
         y -= cfg["gap_after_price"]
 
+    for extra_line in content.get("accord_extra_lines", []):
+        extra_line = (extra_line or "").strip()
+        if not extra_line:
+            continue
+        if y < bottom_limit:
+            overflowed = True
+            break
+        y -= cfg["price_size"]
+        _draw_left_or_center_line(c, extra_line, center_x, y, max_width, body_font, cfg["price_size"], "#111111")
+        y -= cfg["gap_after_price"]
+
     if content.get("section_header"):
         if y < bottom_limit:
             overflowed = True
@@ -384,6 +427,14 @@ def render_price_card(c, origin_x, cfg, content, body_font, origin_y=0):
             break
         if line.get("blank"):
             y -= cfg["item_blank_gap"]
+            continue
+        if line.get("heading"):
+            heading_text = (line.get("heading") or "").strip()
+            if heading_text:
+                heading_size = cfg.get("item_heading_size", cfg["item_size"] + 1.5)
+                y -= heading_size
+                _draw_left_or_center_line(c, heading_text, center_x, y, max_width, heading_font, heading_size, "#111111")
+                y -= cfg.get("item_heading_gap", cfg["item_line_gap"] + 2)
             continue
         text = (line.get("text") or "").strip()
         if not text:
@@ -427,6 +478,15 @@ def generate_price_card_pdf(content, cfg, output_path, base_dir):
     body_font_path = os.path.join(base_dir, cfg["fonts"]["body"])
     body_font = _register_body_font(body_font_path)
 
+    # Sub-headings inside the Drinks List use a bolder weight than the
+    # regular item lines so they read as group labels, not just more items.
+    # Falls back to the body font if a template doesn't specify one.
+    heading_rel = cfg["fonts"].get("heading")
+    if heading_rel:
+        heading_font = _register_body_font(os.path.join(base_dir, heading_rel))
+    else:
+        heading_font = body_font
+
     display_font_path = os.path.join(base_dir, cfg["fonts"]["display"])
     cfg = dict(cfg)
     cfg["fonts"] = {"display": display_font_path, "body": body_font_path}
@@ -446,17 +506,13 @@ def generate_price_card_pdf(content, cfg, output_path, base_dir):
 
     c = canvas.Canvas(output_path, pagesize=(sheet_w, sheet_h))
 
-    overflow = render_price_card(c, offset_x, cfg, content, body_font, offset_y)
+    overflow = render_price_card(c, offset_x, cfg, content, body_font, offset_y, heading_font)
     if two_up:
-        overflow_2 = render_price_card(c, offset_x + card_w, cfg, content, body_font, offset_y)
+        overflow_2 = render_price_card(c, offset_x + card_w, cfg, content, body_font, offset_y, heading_font)
         overflow = overflow or overflow_2
-        c.setStrokeColorRGB(0.85, 0.85, 0.85)
-        c.setDash(2, 2)
-        c.line(sheet_w / 2.0, offset_y, sheet_w / 2.0, offset_y + card_h)
-        c.setDash()
 
-    if cfg.get("crop_marks", True):
-        _draw_crop_marks(c, offset_x, offset_y, block_w, card_h, sheet_w)
+    if cfg.get("crop_marks", False):
+        _draw_crop_marks(c, offset_x, offset_y, block_w, card_h, sheet_w, mid_mark=two_up)
 
     c.showPage()
     c.save()
