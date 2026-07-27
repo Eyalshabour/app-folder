@@ -1,0 +1,31 @@
+{
+  "courses": [
+    {
+      "description": "artichoke, gribiche sauce - stuffed onion, urfa, trout eggs",
+      "name": "AMUSE-BOUCHE"
+    },
+    {
+      "description": "langoustine, tzaziki shifka, sorel cream, grapefruit",
+      "name": "WE LOVE GREEn",
+      "wine": "Nana \u00abAmmonite\u00bb 2023, N\u00e9gev, Isra\u00ebl"
+    },
+    {
+      "description": "red snapper, leek, bulle Tomer sabayon, fenugreek, parsley",
+      "name": "RED SABZI",
+      "wine": "Zur \u00abLevanter\u00bb 2022, Judean Hills, Israel"
+    },
+    {
+      "description": "duck, smoky orange, celeri gel, tanzia",
+      "name": "A DUCK In WInTER",
+      "wine": "Lopez de Heredia \u00abVina Tondonia\u00bb 2013, Rioja Reserva, Espagne"
+    }
+  ],
+  "dessert": [
+    {
+      "description": "chou pastry, pine nuts pralin\u00e9, amba, mango, mint",
+      "name": "PARIS-JERUSALEM",
+      "wine": "Domaine de la Gauterie \u00abBonnezeau\u00bb 2022, Bonnezeau, France"
+    }
+  ],
+  "title": "LA VOYAGETTE"
+}

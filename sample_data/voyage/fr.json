@@ -1,0 +1,35 @@
+{
+  "courses": [
+    {
+      "description": "langoustine, cerise, machleb - tarama, figue, filo - tarte ayran, wakame, concombre arm\u00e9nien",
+      "name": "TOUR DAnS LA VIEILLE VILLE"
+    },
+    {
+      "description": "moules, petit pois, kasu, citron, noix, urfa",
+      "name": "OREZ VE AFUnA"
+    },
+    {
+      "description": "langoustine, carotte fum\u00e9e, bisque g\u00e9n\u00e9pi, harissa, cumin, c\u00e9lerie",
+      "name": "bisqotec"
+    },
+    {
+      "description": "oeuf mollet, mousse de tahini, relish, mulukhiyah, poutargue, oeufs de truite, challah",
+      "name": "HAMInADOS"
+    },
+    {
+      "description": "cabillaud matur\u00e9, pois chiches frits, girolles, persil, eau de shifka",
+      "name": "PATRIYOTE"
+    },
+    {
+      "description": "ris de veau, fleur de courgette, ail confit, feuilles de moutarde, vinaigrette de veau",
+      "name": "RIS D'ORLOFF"
+    }
+  ],
+  "dessert": [
+    {
+      "description": "freekeh souffl\u00e9, croustillant baharat, cr\u00e8me poivre-canelle, sorbet citron bergamote",
+      "name": "EASY PEASY LEMOn FREEKEH"
+    }
+  ],
+  "title": "LE VOYAGE SHABOUR"
+}

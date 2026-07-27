@@ -1,0 +1,27 @@
+{
+  "courses": [
+    {
+      "description": "artichaut, gribiche - oignon farci, urfa, oeufs de truite",
+      "name": "AMUSE-BOUCHE"
+    },
+    {
+      "description": "langoustine, tzaziki shifka, cr\u00e8me oseille, pamplemousse",
+      "name": "WE LOVE GREEn"
+    },
+    {
+      "description": "dorade s\u00e9baste, poireau, sabayon bulle Tomer, fenugrec, persil",
+      "name": "RED SABZI"
+    },
+    {
+      "description": "canard, orange fum\u00e9e, gel c\u00e9leri, tanzia",
+      "name": "A DUCK In WInTER"
+    }
+  ],
+  "dessert": [
+    {
+      "description": "p\u00e2te \u00e0 chou, pralin\u00e9 pignons, amba, mangue, menthe",
+      "name": "PARIS-JERUSALEM"
+    }
+  ],
+  "title": "LA VOYAGETTE"
+}

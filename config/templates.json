@@ -1,0 +1,179 @@
+{
+  "_comment": "Registry of available menu templates. Add more entries here as new menu styles are built.",
+  "templates": [
+    {
+      "id": "voyage_shabour",
+      "name": "The Voyage Shabour (tasting menu)",
+      "layout_config": "config/templates/voyage_shabour.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "aperitifs_voyage",
+      "name": "Le Voyage Shabour (aperitifs & pricing)",
+      "layout_config": "config/templates/aperitifs_voyage.json",
+      "languages": [
+        "fr"
+      ]
+    },
+    {
+      "id": "aperitifs_voyagette",
+      "name": "La Voyagette (aperitifs & pricing)",
+      "layout_config": "config/templates/aperitifs_voyage.json",
+      "languages": [
+        "fr"
+      ]
+    },
+    {
+      "id": "exterieur_voyage",
+      "name": "Le Voyage Shabour (exterieur card)",
+      "layout_config": "config/templates/exterieur_voyage.json",
+      "languages": [
+        "fr"
+      ]
+    },
+    {
+      "id": "exterieur_voyagette",
+      "name": "La Voyagette (exterieur card)",
+      "layout_config": "config/templates/exterieur_voyage.json",
+      "languages": [
+        "fr"
+      ]
+    },
+    {
+      "id": "winelist",
+      "name": "Carte des Vins (wine list)",
+      "layout_config": "config/templates/winelist.json",
+      "languages": [
+        "fr"
+      ]
+    },
+    {
+      "id": "digestifs",
+      "name": "Digestifs (Douceurs / Amers + Digestifs)",
+      "layout_config": "config/templates/digestifs.json",
+      "languages": [
+        "fr"
+      ]
+    },
+    {
+      "id": "6_kosher_temps_voyagette",
+      "name": "VOYAGETTE KOSHER 6 TEMPS (Lunch)",
+      "layout_config": "config/templates/voyage_shabour.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "6_pairing_temps_voyagette",
+      "name": "VOYAGETTE 6 TEMPS PAIRING (Lunch Wine Pairing)",
+      "layout_config": "config/templates/voyage_pairing.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "6_temps_veggie_voyagette",
+      "name": "VOYAGETTE VEGGIE 6 TEMPS (Lunch)",
+      "layout_config": "config/templates/voyage_shabour.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "6_temps_voyagette",
+      "name": "VOYAGETTE 6 TEMPS (Lunch)",
+      "layout_config": "config/templates/voyage_shabour.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "kosher_voyage",
+      "name": "VOYAGE KOSHER art de la table (Dinner)",
+      "layout_config": "config/templates/voyage_shabour.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "kosher_voyagette",
+      "name": "VOYAGETTE KOSHER art de la table (Lunch)",
+      "layout_config": "config/templates/voyage_shabour.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "pairing_premium_voyage",
+      "name": "VOYAGE PAIRING Premium (Dinner Wine Pairing)",
+      "layout_config": "config/templates/voyage_pairing.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "pairing_voyage",
+      "name": "VOYAGE PAIRING (Dinner Wine Pairing)",
+      "layout_config": "config/templates/voyage_pairing.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "pairing_voyagette",
+      "name": "VOYAGETTE PAIRING art de la table (Lunch Wine Pairing)",
+      "layout_config": "config/templates/voyage_pairing.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "veggie_voyage",
+      "name": "VOYAGE VEGGIE art de la table (Dinner)",
+      "layout_config": "config/templates/voyage_shabour.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "veggie_voyagette",
+      "name": "VOYAGETTE VEGGIE art de la table (Lunch)",
+      "layout_config": "config/templates/voyage_shabour.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "voyage",
+      "name": "VOYAGE art de la table (Dinner)",
+      "layout_config": "config/templates/voyage_shabour.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "voyagette",
+      "name": "VOYAGETTE art de la table (Lunch)",
+      "layout_config": "config/templates/voyage_shabour.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    }
+  ]
+}

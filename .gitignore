@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+drive/service_account.json
+generated_pdfs/*.pdf
+!generated_pdfs/.gitkeep
+preview/
+preview-*.png
+_preview_*.pdf

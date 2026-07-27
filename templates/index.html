@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menu Editor</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <form method="post" action="{{ url_for('logout') }}" class="logout-form">
+      <button type="submit" class="logout-button">Log out</button>
+    </form>
+    <h1>Edit Your Menu</h1>
+    <p class="subtitle">Pick a menu above, make your changes below, then press the big green button to save.</p>
+    {% if not drive_connected %}
+    <div class="notice">Not connected to Google Drive yet &mdash; changes are saved on this computer only.</div>
+    {% endif %}
+  </header>
+
+  <div class="controls-bar">
+    <div class="control">
+      <label>Menu</label>
+      <select id="template-select"></select>
+    </div>
+    <div class="control">
+      <label>Language</label>
+      <div id="lang-tabs" class="lang-tabs"></div>
+    </div>
+    <div class="control control-end">
+      <label>&nbsp;</label>
+      <button type="button" id="admin-toggle-btn" class="admin-toggle-button">⚙️ Admin</button>
+    </div>
+  </div>
+
+  <div id="admin-panel" class="admin-panel" hidden>
+    <div class="admin-panel-header">
+      <h3>Layout settings for this menu</h3>
+      <p class="admin-panel-sub">Font sizes and spacing (margins/gaps, in points). Changes apply the next time you Preview or Save. Font files themselves aren't editable here.</p>
+    </div>
+    <div id="admin-fields" class="admin-fields"></div>
+    <div class="admin-panel-actions">
+      <button type="button" id="admin-save-btn" class="admin-save-button">Save Layout Changes</button>
+      <button type="button" id="admin-preview-btn" class="admin-preview-button">Preview with these settings</button>
+      <span id="admin-status"></span>
+    </div>
+  </div>
+
+  <main id="menu-root">
+    <p class="loading">Loading your menu&hellip;</p>
+  </main>
+
+  <div id="preview-panel" class="preview-panel" hidden>
+    <div class="preview-panel-header">
+      <h3>Preview</h3>
+      <button type="button" id="preview-close-btn" class="preview-close-button">✕ Close preview</button>
+    </div>
+    <iframe id="preview-frame" class="preview-frame"></iframe>
+  </div>
+
+  <div id="save-bar">
+    <button id="preview-btn" class="preview-button">👁 Preview</button>
+    <button id="save-btn" class="save-button">💾 Save &amp; Create Print PDF</button>
+    <div id="save-status"></div>
+  </div>
+
+  <template id="title-template">
+    <div class="menu-title-field">
+      <label>Menu Title</label>
+      <input type="text" class="menu-title-input" />
+    </div>
+  </template>
+
+  <template id="group-template">
+    <section class="menu-group">
+      <h2 class="group-heading"></h2>
+      <div class="items-list"></div>
+      <button type="button" class="add-item-button">+ Add a Course</button>
+    </section>
+  </template>
+
+  <template id="item-template">
+    <div class="item-row">
+      <div class="item-fields">
+        <div class="field">
+          <label>Course Name</label>
+          <input type="text" class="item-name" placeholder="e.g. Tour in the Old City" />
+        </div>
+        <div class="field">
+          <label>Description</label>
+          <input type="text" class="item-desc" placeholder="e.g. langoustine, cherry, machleb..." />
+        </div>
+      </div>
+      <button type="button" class="remove-item-button" title="Remove this course">✕</button>
+    </div>
+  </template>
+
+  <template id="simple-field-template">
+    <div class="menu-title-field">
+      <label class="simple-field-label"></label>
+      <input type="text" class="simple-field-input" />
+    </div>
+  </template>
+
+  <template id="line-item-template">
+    <div class="line-row">
+      <input type="text" class="line-input" placeholder="e.g. CHAMPAGNE TARLANT «ZERO» BRUT NATURE / 22 €" />
+      <button type="button" class="remove-item-button" title="Remove this line">✕</button>
+    </div>
+  </template>
+
+  <template id="spacer-row-template">
+    <div class="spacer-row">
+      <span class="spacer-label">— blank space —</span>
+      <button type="button" class="remove-item-button" title="Remove this spacer">✕</button>
+    </div>
+  </template>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

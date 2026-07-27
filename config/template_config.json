@@ -1,0 +1,47 @@
+{
+  "_comment": "Placeholder layout for the sample/demo template. Once you export the real menu as IDML + PDF from InDesign, this file gets regenerated to match your real text frame positions (see SETUP_INSTRUCTIONS.md).",
+  "page_size": [612, 792],
+  "background_pdf": "sample_data/background.pdf",
+  "restaurant_name": {
+    "text": "VOYAGE ART DE LA TABLE",
+    "x": 306, "y": 730, "font": "Helvetica-Bold", "size": 20, "align": "center"
+  },
+  "sections": [
+    {
+      "id": "starters",
+      "title_default": "Starters",
+      "title_box": {"x": 72, "y": 660, "w": 468, "h": 24, "font": "Helvetica-Bold", "size": 15, "align": "left"},
+      "items_box": {"x": 72, "y": 630, "w": 468, "h": 170},
+      "item_style": {
+        "name_font": "Helvetica-Bold", "name_size": 11,
+        "desc_font": "Helvetica-Oblique", "desc_size": 9.5,
+        "price_font": "Helvetica-Bold", "price_size": 11,
+        "line_gap": 4, "item_gap": 10, "desc_color": "#555555"
+      }
+    },
+    {
+      "id": "mains",
+      "title_default": "Mains",
+      "title_box": {"x": 72, "y": 440, "w": 468, "h": 24, "font": "Helvetica-Bold", "size": 15, "align": "left"},
+      "items_box": {"x": 72, "y": 410, "w": 468, "h": 200},
+      "item_style": {
+        "name_font": "Helvetica-Bold", "name_size": 11,
+        "desc_font": "Helvetica-Oblique", "desc_size": 9.5,
+        "price_font": "Helvetica-Bold", "price_size": 11,
+        "line_gap": 4, "item_gap": 10, "desc_color": "#555555"
+      }
+    },
+    {
+      "id": "drinks",
+      "title_default": "Drinks",
+      "title_box": {"x": 72, "y": 190, "w": 468, "h": 24, "font": "Helvetica-Bold", "size": 15, "align": "left"},
+      "items_box": {"x": 72, "y": 160, "w": 468, "h": 140},
+      "item_style": {
+        "name_font": "Helvetica-Bold", "name_size": 11,
+        "desc_font": "Helvetica-Oblique", "desc_size": 9.5,
+        "price_font": "Helvetica-Bold", "price_size": 11,
+        "line_gap": 4, "item_gap": 10, "desc_color": "#555555"
+      }
+    }
+  ]
+}

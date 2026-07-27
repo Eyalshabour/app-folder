@@ -1,0 +1,48 @@
+{
+  "sections": [
+    {
+      "id": "starters",
+      "title": "Starters",
+      "items": [
+        {"name": "Burrata & Heirloom Tomato", "description": "Basil oil, aged balsamic, sourdough crisp", "price": "16"},
+        {"name": "Tuna Tartare", "description": "Avocado, sesame, citrus ponzu", "price": "19"},
+        {"name": "Roasted Beet Salad", "description": "Whipped goat cheese, candied walnuts", "price": "14"}
+      ]
+    },
+    {
+      "id": "mains",
+      "title": "Mains",
+      "items": [
+        {
+          "name": "Pan-Seared Salmon",
+          "description": "Lemon beurre blanc, seasonal vegetables",
+          "price": "32"
+        },
+        {
+          "name": "Braised Short Rib",
+          "description": "Red wine jus, truffle mash",
+          "price": "38"
+        },
+        {
+          "name": "Wild Mushroom Risotto",
+          "description": "Parmesan, white truffle oil",
+          "price": "26"
+        },
+        {
+          "name": "Herb-Crusted Rack of Lamb",
+          "description": "Mint gremolata, roasted root vegetables",
+          "price": "42"
+        }
+      ]
+    },
+    {
+      "id": "drinks",
+      "title": "Drinks",
+      "items": [
+        {"name": "Voyage Signature Spritz", "description": "Prosecco, elderflower, citrus", "price": "15"},
+        {"name": "House Red / White", "description": "Ask your server for today's selection", "price": "12"},
+        {"name": "Sparkling Water", "description": "San Pellegrino", "price": "6"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "courses": [
+    {
+      "description": "langosutine, cerise, machleb - couteaux, tarama, figue - tarte ayran, wakame, concombre arm\u00e9nien",
+      "name": "TOUR DAnS LA VIEILLE VILLE"
+    },
+    {
+      "description": "moules, petit pois, kasu, citron, noix, urfa",
+      "name": "OREZ VE AFUnA",
+      "wine": "Sak\u00e9 Izumibashi \u00abKuro Tonbo\u00bb Kimoto Junmai, Japon"
+    },
+    {
+      "description": "langoustine, carotte fum\u00e9e, bisque g\u00e9n\u00e9pi, harissa, cumin, c\u00e9lerie",
+      "name": "bisqotec",
+      "wine": "BATrimbach \u00abR\u00e9serve Gewurztraminer\u00bb 2017, Alsace, France"
+    },
+    {
+      "description": "oeuf mollet, mousse de tahini, relish, mulukhiyah, poutargue, oeufs de truite, challah",
+      "name": "HAMInADOS",
+      "wine": "Barbadillo \u00abPatinegro\u00bb 2023, Andalousie, Espagne"
+    },
+    {
+      "description": "rouget, poireau, sabayon bulle Tomer, fenugrec, persil",
+      "name": "RED SABZI",
+      "wine": "Zur \u00abLevanter\u00bb 2022, Monts de Jud\u00e9e, Isra\u00ebl"
+    },
+    {
+      "description": "ris de veau, fleur de courgette, ail confit, feuilles de moutarde, vinaigrette de veau",
+      "name": "ris d'orloff",
+      "wine": "Borgogno \u00abNo Name\u00bb 2022, Barolo, Italie"
+    }
+  ],
+  "dessert": [
+    {
+      "description": "freekeh souffl\u00e9, croustillant baharat, cr\u00e8me poivre-canelle, sorbet citron bergamote",
+      "name": "EASY PEASY LEMOn FREEKEH"
+    }
+  ],
+  "title": "LE VOYAGE SHABOUR"
+}

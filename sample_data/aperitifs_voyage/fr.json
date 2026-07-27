@@ -1,0 +1,47 @@
+{
+  "accord_header": "ACCORD METS ET VInS",
+  "accord_price": "96 \u20ac / 128 \u20ac",
+  "footer_lines": [
+    "Un registre des allerg\u00e8nes est disponible sur demande",
+    "Prix nets en euros - Taxes et service compris"
+  ],
+  "items": [
+    {
+      "text": "ANTECH \u00abLA BULLE SHABOUR\u00bb / 12 \u20ac"
+    },
+    {
+      "text": "CHAMPAGNE TARLANT \u00abZERO\u00bb BRUT NATURE / 22 \u20ac"
+    },
+    {
+      "text": "CHAMPAGNE GEOFFROY \u00abROSE DE SAIGNEE\u00bb 2020, EXTRA-BRUT / 26 \u20ac"
+    },
+    {
+      "text": "BRUNO PAILLARD \u00ab BLANC DE BLANCS\u00bb , EXTRA-BRUT / 36 \u20ac"
+    },
+    {
+      "blank": true
+    },
+    {
+      "text": "MULASSANO \u00abVERMOUTH BIANCO DI TORINO\u00bb, ITALIE / 15 \u20ac"
+    },
+    {
+      "text": "EQUIPO NAVAZOS \u00abLA BOTA 103\u00bb, ESPAGNE / 17 \u20ac"
+    },
+    {
+      "text": "SAMUEL SMITH \u00abPURE BREWED ORGANIC LAGER\u00bb, ANGLETERRE / 12 \u20ac"
+    },
+    {
+      "blank": true
+    },
+    {
+      "text": "SPRITZ \u00abSHABOUR\u00bb / 19 \u20ac"
+    },
+    {
+      "text": "NEGRONI \u00abSHABOUR\u00bb / 22 \u20ac"
+    }
+  ],
+  "price": "161 \u20ac",
+  "section_header": "APERITIFS & COCKTAILS",
+  "subprice": "Suppl\u00e9ment caviar : 76 \u20ac",
+  "title": "LE VOYAGE SHABOUR"
+}

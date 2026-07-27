@@ -1,0 +1,27 @@
+{
+  "_comment": "Layout for 'Shabour_Winelist' -- a multi-page categorized price list (category > region/country > wine+price). Each logical page shrinks its text/spacing to stay on one printed page (matching the original file) instead of spilling onto an extra PDF page.",
+  "layout_type": "categorized_list",
+  "page_width": 595.28,
+  "page_height": 841.89,
+  "margin_top": 70,
+  "margin_bottom": 55,
+  "margin_side": 65,
+  "gap_after_page_title": 34,
+  "gap_after_category": 10,
+  "gap_after_subgroup": 9,
+  "gap_after_item": 4.5,
+  "gap_after_group_block": 12,
+  "fonts": {
+    "display": "assets/fonts/SHABOUR-SemiBold.otf",
+    "body": "assets/fonts/AvenirLight.ttf",
+    "category": "assets/fonts/SHABOUR-SemiBold.otf",
+    "subgroup": "assets/fonts/AvenirMedium.ttf",
+    "item": "assets/fonts/AvenirLight.ttf",
+    "note": "assets/fonts/AvenirLight.ttf"
+  },
+  "page_title_size": 22,
+  "category_size": 15.0,
+  "note_size": 8,
+  "subgroup_size": 9.5,
+  "item_size": 8.5
+}

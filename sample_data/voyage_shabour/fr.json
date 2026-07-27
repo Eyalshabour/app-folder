@@ -1,0 +1,36 @@
+{
+  "_note": "Placeholder -- same content as English for now. Switch to the French tab in the app and type in the real French translations; nothing else needs to change.",
+  "courses": [
+    {
+      "description": "langoustine, cherry, machleb - razor clams, tarama, fig gel - ayran tart, wakame, armenian cucumber",
+      "name": "Tour in the Old City"
+    },
+    {
+      "description": "mussels, green peas, kasu, lemon, walnuts, urfa",
+      "name": "Orez ve Afuna"
+    },
+    {
+      "description": "Langoustine, smoked carrot, g\u00e9n\u00e9pi bisque, harissa, cumin, celery",
+      "name": "Bisqotec"
+    },
+    {
+      "description": "soft boiled egg, tahini foam, relish, mulukhiyah, bottarga, trout eggs, challah",
+      "name": "Haminados"
+    },
+    {
+      "description": "red mullet, leek, bulle Tomer sabayon, fenugreek, parsley",
+      "name": "Red Sabzi"
+    },
+    {
+      "description": "Sweetbread, zucchini flower, confit garlic, mustard leaves, veal vinaigrette",
+      "name": "Ris D'Orloff"
+    }
+  ],
+  "dessert": [
+    {
+      "description": "fried freekeh, baharat cake, black pepper-cinnamon cream, bergamot lemon sorbet",
+      "name": "Easy Peasy Lemon Freekeh"
+    }
+  ],
+  "title": "THE VOYAGE SHABOUR"
+}

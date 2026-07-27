@@ -1,0 +1,31 @@
+{
+  "courses": [
+    {
+      "description": "artichoke, gribiche sauce - stuffed onion, urfa, trout eggs",
+      "name": "AMUSE-BOUCHE"
+    },
+    {
+      "description": "yellowtail, tzaziki shifka, sorel cream, grapefruit",
+      "name": "WE LOVE GREEn"
+    },
+    {
+      "description": "soft boiled egg, tahini foam, relish, mulukhiyah, bottarga, trout eggs",
+      "name": "HAMInADOS"
+    },
+    {
+      "description": "manto ravioli, onion, cauliflower, pike eggs, mint",
+      "name": "MEURICETTE"
+    },
+    {
+      "description": "red snapper, leek, bulle Tomer sabayon, fenugreek, parsley",
+      "name": "RED SABZI"
+    }
+  ],
+  "dessert": [
+    {
+      "description": "chou pastry, pine nuts pralin\u00e9, amba, mango, mint",
+      "name": "PARIS-JERUSALEM"
+    }
+  ],
+  "title": "THE VOYAGETTE"
+}

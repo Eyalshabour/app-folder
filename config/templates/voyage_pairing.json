@@ -1,0 +1,29 @@
+{
+  "_comment": "Layout for the wine-pairing tasting menus (VOYAGE PAIRING, VOYAGETTE PAIRING, and their 6-temps / Premium variants). Same card and brand styling as voyage_shabour.json, but each course carries an extra line naming the wine served with it -- so the gaps between courses are tightened slightly to keep the same number of courses on one card.",
+  "card_width": 420.94,
+  "card_height": 595.28,
+  "margin_top": 51.6,
+  "margin_bottom": 33.6,
+  "margin_side": 44,
+  "gap_after_title": 20,
+  "gap_after_divider": 16,
+  "gap_between_courses": 11,
+  "gap_name_to_desc": 4,
+  "gap_desc_to_wine": 3,
+  "fonts": {
+    "display": "assets/fonts/SHABOUR-SemiBold.otf",
+    "body": "assets/fonts/AvenirBook.ttf"
+  },
+  "divider_icon": "assets/icons/shabour_symbol.png",
+  "divider_icon_height": 13,
+  "title_size": 19,
+  "course_name_size": 12,
+  "description_size": 7.8,
+  "description_line_height": 10,
+  "description_color": "#1a1a1a",
+  "wine_size": 7.3,
+  "wine_color": "#6b5a45",
+  "sheet_width": 841.89,
+  "sheet_height": 595.28,
+  "crop_marks": true
+}

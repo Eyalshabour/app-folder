@@ -1,0 +1,27 @@
+{
+  "courses": [
+    {
+      "description": "artichaut, gribiche - oignon farci, urfa",
+      "name": "AMUSE-BOUCHE"
+    },
+    {
+      "description": "ognion farci, tzaziki shifka, cr\u00e8me oseille, pamplemousse",
+      "name": "WE LOVE GREEn"
+    },
+    {
+      "description": "poireau, sabayon bulle Tomer, fenugrec, persil",
+      "name": "RED SABZI"
+    },
+    {
+      "description": "raviole manto, oignon, chou-fleur, menthe, bouillon hamoud",
+      "name": "MEURICETTE"
+    }
+  ],
+  "dessert": [
+    {
+      "description": "p\u00e2te \u00e0 chou, pralin\u00e9 pignons, amba, mangue, menthe",
+      "name": "PARIS-JERUSALEM"
+    }
+  ],
+  "title": "LA VOYAGETTE"
+}

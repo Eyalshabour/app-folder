@@ -1,0 +1,27 @@
+{
+  "courses": [
+    {
+      "description": "artichoke, gribiche sauce - stuffed onion, urfa",
+      "name": "AMUSE-BOUCHE"
+    },
+    {
+      "description": "stuffed onion, tzaziki shifka, sorel cream, grapefruit",
+      "name": "WE LOVE GREEn"
+    },
+    {
+      "description": "leek, bulle Tomer sabayon, fenugreek, parsley",
+      "name": "RED SABZI"
+    },
+    {
+      "description": "manto ravioli, onion, cauliflower, mint, hamoud broth",
+      "name": "MEURICETTE"
+    }
+  ],
+  "dessert": [
+    {
+      "description": "chou pastry, pine nuts pralin\u00e9, amba, mango, mint",
+      "name": "PARIS-JERUSALEM"
+    }
+  ],
+  "title": "THE VOYAGETTE"
+}
