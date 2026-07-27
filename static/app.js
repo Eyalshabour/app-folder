@@ -460,7 +460,9 @@ function buildLinesGroup(heading, key) {
 function buildLineRow(key, iIdx, line) {
   if (line.blank) {
     const node = spacerRowTpl.content.cloneNode(true);
-    node.querySelector(".remove-item-button").addEventListener("click", () => {
+    const removeBtn = node.querySelector(".remove-item-button");
+    removeBtn.parentNode.insertBefore(buildMoveControls(menuState[key], iIdx, "line"), removeBtn);
+    removeBtn.addEventListener("click", () => {
       menuState[key].splice(iIdx, 1);
       renderMenu();
     });
@@ -470,7 +472,9 @@ function buildLineRow(key, iIdx, line) {
   const input = node.querySelector(".line-input");
   input.value = line.text || "";
   input.addEventListener("input", () => { menuState[key][iIdx].text = input.value; });
-  node.querySelector(".remove-item-button").addEventListener("click", () => {
+  const removeBtn = node.querySelector(".remove-item-button");
+  removeBtn.parentNode.insertBefore(buildMoveControls(menuState[key], iIdx, "line"), removeBtn);
+  removeBtn.addEventListener("click", () => {
     menuState[key].splice(iIdx, 1);
     renderMenu();
   });
@@ -491,7 +495,9 @@ function buildFooterGroup() {
     const input = row.querySelector(".line-input");
     input.value = text || "";
     input.addEventListener("input", () => { menuState.footer_lines[iIdx] = input.value; });
-    row.querySelector(".remove-item-button").addEventListener("click", () => {
+    const removeBtn = row.querySelector(".remove-item-button");
+    removeBtn.parentNode.insertBefore(buildMoveControls(menuState.footer_lines, iIdx, "line"), removeBtn);
+    removeBtn.addEventListener("click", () => {
       menuState.footer_lines.splice(iIdx, 1);
       renderMenu();
     });
@@ -563,7 +569,9 @@ function buildItemRow(key, iIdx, item) {
     node.querySelector(".item-fields").appendChild(wineField);
   }
 
-  node.querySelector(".remove-item-button").addEventListener("click", () => {
+  const removeBtn = node.querySelector(".remove-item-button");
+  removeBtn.parentNode.insertBefore(buildMoveControls(menuState[key], iIdx, "course"), removeBtn);
+  removeBtn.addEventListener("click", () => {
     menuState[key].splice(iIdx, 1);
     renderMenu();
   });

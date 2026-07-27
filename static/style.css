@@ -244,6 +244,7 @@ main {
 .logout-button:hover { background: #fbf6ee; }
 
 .move-controls { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+.item-row .move-controls { margin-top: 22px; }
 .move-button {
   width: 26px; height: 18px; line-height: 1; padding: 0; border: 1px solid #ddd; border-radius: 5px;
   background: #fdfcfa; color: #7a5a34; font-size: 10px; cursor: pointer;
