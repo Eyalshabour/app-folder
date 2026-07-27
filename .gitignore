@@ -9,3 +9,5 @@ generated_pdfs/*.pdf
 preview/
 preview-*.png
 _preview_*.pdf
+*.log
+test_*.pdf
