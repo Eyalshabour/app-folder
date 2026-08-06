@@ -1,24 +1,16 @@
 {
   "courses": [
     {
-      "description": "artichoke, gribiche sauce - stuffed onion, urfa, trout eggs",
+      "description": "artichoke, gribiche sauce",
       "name": "AMUSE-BOUCHE"
     },
     {
-      "description": "langoustine, tzaziki shifka, sorel cream, grapefruit",
-      "name": "WE LOVE GREEn"
+      "description": "beetroot, grape-seed mustard, red shiso, galanga",
+      "name": "BABUSHKA"
     },
     {
-      "description": "soft boiled egg, tahini foam, relish, mulukhiyah, bottarga, trout eggs",
-      "name": "HAMInADOS"
-    },
-    {
-      "description": "manto ravioli, onion, cauliflower, pike eggs, mint",
-      "name": "MEURICETTE"
-    },
-    {
-      "description": "red snapper, leek, bulle Tomer sabayon, fenugreek, parsley",
-      "name": "RED SABZI"
+      "description": "eggplant, shiitake broth, walnuts",
+      "name": "KISHKUSH"
     },
     {
       "description": "duck, smoky orange, celeri gel, tanzia",
@@ -27,8 +19,8 @@
   ],
   "dessert": [
     {
-      "description": "chou pastry, pine nuts pralin\u00e9, amba, mango, mint",
-      "name": "PARIS-JERUSALEM"
+      "description": "puffed freekeh, baharat crisp, black pepper-cinnamon cream, lime sorbet",
+      "name": "EASY PEASY LEMOn FREEKEH"
     }
   ],
   "title": "THE VOYAGETTE"

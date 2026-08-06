@@ -1,6 +1,6 @@
 {
   "accord_header": "ACCORD METS ET VInS",
-  "accord_price": "64 \u20ac / 84 \u20ac",
+  "accord_price": "54 \u20ac",
   "footer_lines": [
     "Un registre des allerg\u00e8nes est disponible sur demande",
     "Prix nets en euros - Taxes et service compris"
@@ -10,13 +10,13 @@
       "text": "LA BULLE DE TOMER \u00abSHABOUR\u00bb / 12 \u20ac"
     },
     {
-      "text": "CHAMPAGNE TARLANT \u00abZERO\u00bb BRUT NATURE / 22 \u20ac"
+      "text": "BENOIT LESUFFLEUR \u00abLA FOLLETIERE\u00bb 2020, NORMANDIE / 14 \u20ac"
     },
     {
-      "text": "CHAMPAGNE GEOFFROY \u00abROSE DE SAIGNEE\u00bb 2020, EXTRA-BRUT / 26 \u20ac"
+      "text": "CHAMPAGNE LELARGE-PUGEOT \u00abTRADITION\u00bb EXTRA-BRUT / 22 \u20ac"
     },
     {
-      "text": "BRUNO PAILLARD \u00ab BLANC DE BLANCS\u00bb , EXTRA-BRUT / 36 \u20ac"
+      "text": "CHAMPAGNE LELARGE-PUGEOT \u00abSAIGNEE DE MEUNIER\u00bb 2016, BRUT NATURE / 26 \u20ac"
     },
     {
       "blank": true
@@ -34,7 +34,11 @@
       "text": "SAMUEL SMITH \u00abPURE BREWED ORGANIC LAGER\u00bb, ANGLETERRE / 12 \u20ac"
     }
   ],
-  "price": "87 \u20ac / 118 \u20ac",
+  "price": "87 \u20ac",
   "section_header": "APERITIFS",
+  "subprice": "Suppl\u00e9ment caviar : 38 \u20ac / 76 \u20ac",
+  "subprice_extra_lines": [
+    "Suppl\u00e9ment plat signature : 28 \u20ac"
+  ],
   "title": "LA VOYAGETTE"
 }

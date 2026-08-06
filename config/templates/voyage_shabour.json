@@ -2,13 +2,19 @@
   "_comment": "Layout for 'The Voyage Shabour' tasting menu card, matching the InDesign screenshot: title, a course sequence, a divider, then dessert. Printed two-up (2 identical cards side by side) on one sheet for cutting. Positions are a close approximation built from the screenshot + brand fonts -- for pixel-perfect match, supply the real InDesign PDF/IDML export (see SETUP_INSTRUCTIONS.md).",
   "card_width": 420.94,
   "card_height": 595.28,
-  "margin_top": 57.6,
+  "margin_top": 20,
   "margin_bottom": 41.6,
   "margin_side": 44,
   "gap_after_title": 26,
   "gap_after_divider": 22,
   "gap_between_courses": 16,
   "gap_name_to_desc": 5,
+  "alignment": {
+    "title": "center",
+    "subtitle": "center",
+    "course_name": "center",
+    "description": "center"
+  },
   "fonts": {
     "display": "assets/fonts/SHABOUR-SemiBold.otf",
     "body": "assets/fonts/AvenirBook.ttf"

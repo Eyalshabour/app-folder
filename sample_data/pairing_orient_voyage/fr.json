@@ -1,0 +1,44 @@
+{
+  "courses": [
+    {
+      "description": "s\u00e9riole, cerise, machleb - couteaux, tarama, figue - tarte ayran, wakame, concombre arm\u00e9nien",
+      "name": "TOUR DAnS LA VIEILLE VILLE"
+    },
+    {
+      "description": "betterave, moutarde de p\u00e9pins de raisin, shiso rouge, galanga",
+      "name": "BABUSHKA",
+      "wine": "Domaine Shumi \" Khikhvi Iberuli \" 2022, Kakh\u00e9tie , G\u00e9orgie"
+    },
+    {
+      "description": "consomm\u00e9 de tomate, crevette tigr\u00e9e, concombre fum\u00e9, liv\u00e8che",
+      "name": "ADOM ADOM",
+      "wine": "Nana \u00abChardonnay\u00bb 2022, N\u00e9gev, Isra\u00ebl"
+    },
+    {
+      "description": "oeuf mollet, mousse de tahini, relish, mulukhiyah, poutargue, oeufs de truite, challah",
+      "name": "HAMInADOS",
+      "wine": "Kechris \u00abLes Larmes du Pin\u00bb 2020, Mac\u00e9doine, Gr\u00e8ce"
+    },
+    {
+      "description": "cabillaud matur\u00e9, pois chiches frits, girolles, persil, eau de shifka",
+      "name": "PATRIYOTE",
+      "wine": "Sphera \u00abFirst Page\u00bb 2022, Judean Hills, Isra\u00ebl"
+    },
+    {
+      "description": "ris de veau, courgette, ail confit, feuilles de moutarde, vinaigrette de veau",
+      "name": "ris d'orloff",
+      "wine": "Kavaklidere \u00abPrestige\u00bb 2019, Anatolie, Turquie"
+    }
+  ],
+  "dessert": [
+    {
+      "description": "Past\u00e8que, feta, huile de verveine, sorbet au concombre arm\u00e9nien",
+      "name": "AVATIACH"
+    },
+    {
+      "description": "Huile de feuille de vigne, raisin, riz souffl\u00e9, glace \u00e0 l'ayran",
+      "name": "GEFEn"
+    }
+  ],
+  "title": "LE VOYAGE SHABOUR"
+}

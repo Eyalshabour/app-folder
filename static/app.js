@@ -7,6 +7,7 @@ const lineItemTpl = document.getElementById("line-item-template");
 const spacerRowTpl = document.getElementById("spacer-row-template");
 const headingRowTpl = document.getElementById("heading-row-template");
 const saveBtn = document.getElementById("save-btn");
+const saveBtnLabel = saveBtn.querySelector(".save-btn-label");
 const saveStatus = document.getElementById("save-status");
 const templateSelect = document.getElementById("template-select");
 const langTabs = document.getElementById("lang-tabs");
@@ -22,6 +23,9 @@ const adminFields = document.getElementById("admin-fields");
 const adminSaveBtn = document.getElementById("admin-save-btn");
 const adminPreviewBtn = document.getElementById("admin-preview-btn");
 const adminStatus = document.getElementById("admin-status");
+
+const railBtns = document.querySelectorAll(".rail-btn");
+const dockPanels = document.querySelectorAll(".dock-panel");
 
 // Human-friendly labels for the layout fields the admin panel can edit.
 // Anything not listed here just gets its raw key name, title-cased.
@@ -50,7 +54,26 @@ const ADMIN_FIELD_LABELS = {
   gap_after_top_icon: "Gap after top icon",
   gap_after_mid_icon: "Gap after middle icon",
   gap_before_bottom_icon: "Gap before bottom icon",
+  gap_before_subgroup: "Gap before sub-group heading",
 };
+
+// Fields a single categorized-list page (Wine List, Digestifs) can
+// override on its own, independent of the document-wide Layout settings
+// -- e.g. if just the Vins Rouges France page runs long, its own item
+// size/gaps can come down a notch without touching every other page.
+// Must match pdf_generator.py's _PAGE_OVERRIDABLE_KEYS.
+const PAGE_OVERRIDABLE_KEYS = [
+  "page_title_size", "category_size", "subgroup_size", "item_size", "note_size",
+  "gap_after_page_title", "gap_after_category", "gap_before_subgroup",
+  "gap_after_subgroup", "gap_after_item", "gap_after_group_block",
+];
+
+// Text roles a single page can point at a different font file, independent
+// of the document-wide Layout tab -- e.g. the Wine List's category/subgroup
+// roles mean different things on different pages (wine style vs. country vs.
+// sub-region), so they can't just be one shared setting.
+// Must match pdf_generator.py's _PAGE_OVERRIDABLE_FONT_ROLES.
+const PAGE_OVERRIDABLE_FONT_ROLES = ["category", "subgroup", "item", "note"];
 
 function adminFieldLabel(key) {
   return ADMIN_FIELD_LABELS[key] || key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
@@ -116,9 +139,153 @@ function renderMenu() {
     renderCourseMenu();
   } else if ("pages" in menuState) {
     renderCategorizedListMenu();
+  } else if ("ingredients" in menuState && "collab" in menuState) {
+    renderRecipeCardMenu();
+  } else if ("ingredients" in menuState) {
+    renderSimpleRecipeCardMenu();
   } else {
     renderPriceCardMenu();
   }
+}
+
+// ---------------------------------------------------------------------
+// Simple family-recipe cards (e.g. "La Challah Shabour", "Tahini
+// Cookies"): just a title, an ingredient table, and a plain method --
+// reuses the same ingredient/method editors as the collab recipe cards.
+// ---------------------------------------------------------------------
+
+function renderSimpleRecipeCardMenu() {
+  const node = simpleFieldTpl.content.cloneNode(true);
+  const input = node.querySelector(".simple-field-input");
+  node.querySelector(".simple-field-label").textContent = "Recipe Title";
+  input.value = menuState.title || "";
+  input.placeholder = "Recipe Title";
+  input.addEventListener("input", () => { menuState.title = input.value; });
+  root.appendChild(node);
+
+  root.appendChild(buildIngredientsGroup());
+  root.appendChild(buildMethodGroup());
+}
+
+// ---------------------------------------------------------------------
+// Recipe cards (e.g. "Shabour x Licoük" collab cards): collab byline,
+// title, an ingredient table (name + qty), and a bulleted method.
+// ---------------------------------------------------------------------
+
+function renderRecipeCardMenu() {
+  [
+    { key: "collab", label: "Collab / Byline (e.g. SHABOUR X LICOÜK)" },
+    { key: "title", label: "Recipe Title" },
+  ].forEach(({ key, label }) => {
+    const node = simpleFieldTpl.content.cloneNode(true);
+    const input = node.querySelector(".simple-field-input");
+    node.querySelector(".simple-field-label").textContent = label;
+    input.value = menuState[key] || "";
+    input.placeholder = label;
+    input.addEventListener("input", () => { menuState[key] = input.value; });
+    root.appendChild(node);
+  });
+
+  root.appendChild(buildIngredientsGroup());
+  root.appendChild(buildMethodGroup());
+
+  const footerNode = simpleFieldTpl.content.cloneNode(true);
+  const footerInput = footerNode.querySelector(".simple-field-input");
+  footerNode.querySelector(".simple-field-label").textContent = "Footer (small print)";
+  footerInput.value = menuState.footer || "";
+  footerInput.placeholder = "e.g. SHABOUR — 19 RUE SAINT-SAUVEUR, 75002 PARIS";
+  footerInput.addEventListener("input", () => { menuState.footer = footerInput.value; });
+  root.appendChild(footerNode);
+}
+
+function buildIngredientsGroup() {
+  const node = groupTpl.content.cloneNode(true);
+  node.querySelector(".group-heading").textContent = "Ingredients";
+  const itemsList = node.querySelector(".items-list");
+  const addBtn = node.querySelector(".add-item-button");
+  addBtn.textContent = "+ Add an Ingredient";
+
+  if (!menuState.ingredients) menuState.ingredients = [];
+  menuState.ingredients.forEach((ing, iIdx) => {
+    itemsList.appendChild(buildIngredientRow(ing, iIdx));
+  });
+
+  addBtn.addEventListener("click", () => {
+    menuState.ingredients.push({ name: "", qty: "" });
+    renderMenu();
+  });
+
+  return node;
+}
+
+function buildIngredientRow(ing, iIdx) {
+  // Reuses the wine-list item row's two-input layout (name left, a short
+  // value right) since a quantity like "1140 G" is the same shape as a
+  // price.
+  const row = document.createElement("div");
+  row.className = "catlist-item-row";
+
+  const nameInput = document.createElement("input");
+  nameInput.type = "text";
+  nameInput.className = "catlist-item-name-input";
+  nameInput.value = ing.name || "";
+  nameInput.placeholder = "e.g. MILK";
+  nameInput.addEventListener("input", () => { ing.name = nameInput.value; });
+  row.appendChild(nameInput);
+
+  const qtyInput = document.createElement("input");
+  qtyInput.type = "text";
+  qtyInput.className = "catlist-item-price-input";
+  qtyInput.value = ing.qty || "";
+  qtyInput.placeholder = "e.g. 1140 G";
+  qtyInput.addEventListener("input", () => { ing.qty = qtyInput.value; });
+  row.appendChild(qtyInput);
+
+  row.appendChild(buildMoveControls(menuState.ingredients, iIdx, "ingredient"));
+
+  const removeBtn = document.createElement("button");
+  removeBtn.type = "button";
+  removeBtn.className = "remove-item-button";
+  removeBtn.title = "Remove this ingredient";
+  removeBtn.textContent = "✕";
+  removeBtn.addEventListener("click", () => {
+    menuState.ingredients.splice(iIdx, 1);
+    renderMenu();
+  });
+  row.appendChild(removeBtn);
+
+  return row;
+}
+
+function buildMethodGroup() {
+  const node = groupTpl.content.cloneNode(true);
+  node.querySelector(".group-heading").textContent = "Method (wrap a word in ** to bold it, e.g. **85°C**)";
+  const itemsList = node.querySelector(".items-list");
+  const addBtn = node.querySelector(".add-item-button");
+  addBtn.textContent = "+ Add a Step";
+
+  if (!menuState.method) menuState.method = [];
+  menuState.method.forEach((step, iIdx) => {
+    const row = lineItemTpl.content.cloneNode(true);
+    const input = row.querySelector(".line-input");
+    input.value = step || "";
+    input.placeholder = "e.g. Heat to **85°C**, hold **2 min**.";
+    input.addEventListener("input", () => { menuState.method[iIdx] = input.value; });
+    const removeBtn = row.querySelector(".remove-item-button");
+    removeBtn.parentNode.insertBefore(buildMoveControls(menuState.method, iIdx, "step"), removeBtn);
+    removeBtn.addEventListener("click", () => {
+      menuState.method.splice(iIdx, 1);
+      renderMenu();
+    });
+    itemsList.appendChild(row);
+  });
+
+  addBtn.addEventListener("click", () => {
+    menuState.method.push("");
+    renderMenu();
+  });
+
+  return node;
 }
 
 // ---------------------------------------------------------------------
@@ -290,6 +457,8 @@ function buildPageEditor(page, pIdx) {
   header.appendChild(removeBtn);
   panel.appendChild(header);
 
+  panel.appendChild(buildPageOverridesPanel(page));
+
   const body = document.createElement("div");
   body.className = "catlist-page-body";
 
@@ -310,6 +479,224 @@ function buildPageEditor(page, pIdx) {
 
   panel.appendChild(body);
   return panel;
+}
+
+// A collapsible "just this page" settings panel -- lets someone fix a
+// single problematic page (too big, overflowing, too sparse) by setting
+// its own font sizes/gaps, without touching the shared Layout settings
+// that every other page still uses. Blank = inherit the document default.
+function buildPageOverridesPanel(page) {
+  const details = document.createElement("details");
+  details.className = "catlist-page-overrides";
+  const hasOverrides = page.layout_overrides && Object.keys(page.layout_overrides).length > 0;
+  details.open = hasOverrides;
+
+  const summary = document.createElement("summary");
+  summary.textContent = hasOverrides
+    ? "Page settings (font size & spacing) -- customized"
+    : "Page settings (font size & spacing)";
+  details.appendChild(summary);
+
+  const note = document.createElement("p");
+  note.className = "admin-panel-sub";
+  note.textContent = "Leave a field blank to use the Layout tab's default for every page. Fill one in to fix just this page.";
+  details.appendChild(note);
+
+  const grid = document.createElement("div");
+  grid.className = "page-overrides-grid";
+
+  PAGE_OVERRIDABLE_KEYS.forEach(key => {
+    const field = document.createElement("div");
+    field.className = "field";
+
+    const label = document.createElement("label");
+    label.textContent = adminFieldLabel(key);
+    field.appendChild(label);
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.step = "0.5";
+    input.placeholder = "default";
+    if (page.layout_overrides && page.layout_overrides[key] !== undefined) {
+      input.value = page.layout_overrides[key];
+    }
+    input.addEventListener("input", () => {
+      const raw = input.value.trim();
+      if (raw === "") {
+        if (page.layout_overrides) {
+          delete page.layout_overrides[key];
+          if (Object.keys(page.layout_overrides).length === 0) delete page.layout_overrides;
+        }
+        return;
+      }
+      const num = parseFloat(raw);
+      if (Number.isNaN(num)) return;
+      if (!page.layout_overrides) page.layout_overrides = {};
+      page.layout_overrides[key] = num;
+    });
+    field.appendChild(input);
+
+    grid.appendChild(field);
+  });
+
+  details.appendChild(grid);
+
+  details.appendChild(buildPageFontsPanel(page));
+  details.appendChild(buildPageUppercaseField(page, "category", "Category heading casing"));
+  details.appendChild(buildPageUppercaseField(page, "subgroup", "Sub-group heading casing"));
+
+  const resetBtn = document.createElement("button");
+  resetBtn.type = "button";
+  resetBtn.className = "remove-item-button page-overrides-reset";
+  resetBtn.textContent = "Clear all overrides for this page";
+  resetBtn.addEventListener("click", () => {
+    delete page.layout_overrides;
+    renderMenu();
+  });
+  details.appendChild(resetBtn);
+
+  return details;
+}
+
+// Full font control for this one page, like InDesign's per-frame font
+// picker: category/subgroup/item/note can each point at any font file
+// installed in assets/fonts (same pool the document-wide Layout tab
+// offers), overriding just this page. "Use document default" removes the
+// override for that role. Needed because on the Wine List, category and
+// subgroup mean different real-world things on different pages (e.g. "Vins
+// au Verre" uses category=wine style/subgroup=country, every other page
+// uses category=country/subgroup=sub-region) so they can't share one font.
+function buildPageFontsPanel(page) {
+  const wrap = document.createElement("div");
+  wrap.className = "page-overrides-fonts";
+
+  const heading = document.createElement("h5");
+  heading.className = "admin-subheading";
+  heading.textContent = "Fonts for this page";
+  wrap.appendChild(heading);
+
+  const grid = document.createElement("div");
+  grid.className = "admin-fields admin-font-grid";
+
+  PAGE_OVERRIDABLE_FONT_ROLES.forEach(role => {
+    const row = document.createElement("div");
+    row.className = "admin-field-row";
+
+    const label = document.createElement("label");
+    label.textContent = FONT_ROLE_LABELS[role] || role;
+    row.appendChild(label);
+
+    const select = document.createElement("select");
+    select.className = "admin-font-select";
+
+    const defaultOpt = document.createElement("option");
+    defaultOpt.value = "";
+    const docDefault = adminFontsState[role];
+    defaultOpt.textContent = docDefault
+      ? `Use document default (${fontFileLabel(docDefault)})`
+      : "Use document default";
+    select.appendChild(defaultOpt);
+
+    const current = page.layout_overrides && page.layout_overrides.fonts
+      ? page.layout_overrides.fonts[role]
+      : "";
+    // category/subgroup can rasterise a font that can't be embedded as
+    // live text (same as the document-wide picker); item/note can't, so
+    // they only get the embeddable subset -- see fontPoolForRole.
+    const rolePool = fontPoolForRole(role);
+    const pool = rolePool.includes(current) || !current ? rolePool : [current, ...rolePool];
+
+    pool.forEach(path => {
+      const opt = document.createElement("option");
+      opt.value = path;
+      opt.textContent = fontFileLabel(path);
+      if (path === current) opt.selected = true;
+      select.appendChild(opt);
+    });
+    if (!current) defaultOpt.selected = true;
+
+    select.addEventListener("change", () => {
+      if (!select.value) {
+        if (page.layout_overrides && page.layout_overrides.fonts) {
+          delete page.layout_overrides.fonts[role];
+          if (Object.keys(page.layout_overrides.fonts).length === 0) delete page.layout_overrides.fonts;
+          if (Object.keys(page.layout_overrides).length === 0) delete page.layout_overrides;
+        }
+        return;
+      }
+      if (!page.layout_overrides) page.layout_overrides = {};
+      if (!page.layout_overrides.fonts) page.layout_overrides.fonts = {};
+      page.layout_overrides.fonts[role] = select.value;
+    });
+    row.appendChild(select);
+
+    grid.appendChild(row);
+  });
+
+  wrap.appendChild(grid);
+
+  const hint = document.createElement("p");
+  hint.className = "admin-panel-sub admin-font-hint";
+  hint.textContent = "Only fonts installed in the app's assets/fonts folder are listed.";
+  wrap.appendChild(hint);
+
+  return wrap;
+}
+
+// {category,subgroup}_uppercase controls the casing this page's category
+// or subgroup names render in -- see pdf_generator.py's draw_category /
+// _apply_casing. Three real values: true (ALL CAPS), "lower" (all
+// lowercase -- latin small letter forms), or false (kept exactly as
+// typed). Category defaults to forced caps; subgroup defaults to typed
+// casing -- both are just starting points, either can be overridden per
+// page. Four-choice dropdown (not a checkbox) so "unset" (inherit the
+// document default) is a real, distinct choice too. Useful together with
+// a font override (see buildPageFontsPanel): Shabour Semibold's capital
+// letters each get a decorative dot, but its lowercase glyphs render
+// clean/undotted -- so "small letters" gives a plainer, quieter look than
+// ALL CAPS from the same font.
+function buildPageUppercaseField(page, role, labelText) {
+  const key = `${role}_uppercase`;
+  const row = document.createElement("div");
+  row.className = "admin-field-row page-overrides-uppercase";
+
+  const label = document.createElement("label");
+  label.textContent = labelText;
+  row.appendChild(label);
+
+  const select = document.createElement("select");
+  select.className = "admin-font-select";
+
+  const current = page.layout_overrides ? page.layout_overrides[key] : undefined;
+  const choices = [
+    { value: "", text: "Use document default", match: current === undefined },
+    { value: "true", text: "ALL CAPS", match: current === true },
+    { value: "lower", text: "small letters (lowercase)", match: current === "lower" },
+    { value: "false", text: "Keep as typed", match: current === false },
+  ];
+  choices.forEach(({ value, text, match }) => {
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = text;
+    if (match) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  select.addEventListener("change", () => {
+    if (select.value === "") {
+      if (page.layout_overrides) {
+        delete page.layout_overrides[key];
+        if (Object.keys(page.layout_overrides).length === 0) delete page.layout_overrides;
+      }
+      return;
+    }
+    if (!page.layout_overrides) page.layout_overrides = {};
+    page.layout_overrides[key] =
+      select.value === "true" ? true : select.value === "lower" ? "lower" : false;
+  });
+  row.appendChild(select);
+
+  return row;
 }
 
 function buildCategoryBlock(page, cat, cIdx) {
@@ -720,14 +1107,20 @@ function buildItemRow(key, iIdx, item) {
 
 async function loadMenu() {
   root.innerHTML = '<p class="loading">Loading your menu&hellip;</p>';
-  const res = await fetch(`/api/menu?template=${encodeURIComponent(currentTemplateId)}&language=${encodeURIComponent(currentLanguage)}`);
-  const data = await res.json();
+  // Fetch the menu content and the layout/fonts info in parallel, but wait
+  // for both before the first renderMenu() -- the per-page override panel
+  // needs availableFonts/availableDisplayFonts (from loadAdminFields) to
+  // build its font dropdowns, so it can't run first with empty lists.
+  const [menuRes] = await Promise.all([
+    fetch(`/api/menu?template=${encodeURIComponent(currentTemplateId)}&language=${encodeURIComponent(currentLanguage)}`),
+    loadAdminFields(),
+  ]);
+  const data = await menuRes.json();
   menuState = data.menu;
   currentCatlistPageIndex = 0;
   renderMenu();
   resetLivePreview();
   refreshPreview({ silent: true });
-  await loadAdminFields();
 }
 
 // ---------------------------------------------------------------------
@@ -824,8 +1217,28 @@ root.addEventListener("click", e => {
 
 let adminFieldsState = {};
 let adminFontsState = {};
+let adminAlignmentState = {};
+let adminCasingState = {};
+
+// Same labels as the per-page override dropdown (buildPageUppercaseField)
+// so the document-wide default and the per-page override read as the same
+// setting at two different levels, not two different features.
+const CASING_ROLE_LABELS = {
+  category_uppercase: "Category heading casing",
+  subgroup_uppercase: "Sub-group heading casing",
+};
 let availableFonts = [];
 let availableDisplayFonts = [];
+// Roles that can rasterise a font their live-text drawing code can't
+// embed (see pdf_generator.py's _draw_role_text) -- so they can safely use
+// any installed font, not just the embeddable subset. Comes from the
+// server (ROLES_WITH_RASTER_FALLBACK in app.py) so this file never drifts
+// out of sync with what the renderer actually supports.
+let rasterSafeRoles = ["display"];
+
+function fontPoolForRole(role) {
+  return rasterSafeRoles.includes(role) ? availableDisplayFonts : availableFonts;
+}
 
 // Which text each font role controls, in plain language.
 const FONT_ROLE_LABELS = {
@@ -835,6 +1248,18 @@ const FONT_ROLE_LABELS = {
   subgroup: "Sub-group headings",
   item: "Item lines",
   note: "Small notes",
+};
+
+// Which text each alignment role controls -- same idea as FONT_ROLE_LABELS,
+// for the "location" (left/center/right) of a role's text on the page.
+const ALIGN_ROLE_LABELS = {
+  page_title: "Page title",
+  category: "Category headings",
+  subgroup: "Sub-group headings",
+  title: "Title",
+  subtitle: "Subtitle",
+  course_name: "Course names",
+  description: "Descriptions",
 };
 
 function fontFileLabel(path) {
@@ -847,9 +1272,98 @@ async function loadAdminFields() {
   const data = await res.json();
   adminFieldsState = data.fields || {};
   adminFontsState = data.fonts || {};
+  adminAlignmentState = data.alignment || {};
+  adminCasingState = data.casing || {};
   availableFonts = data.available_fonts || [];
   availableDisplayFonts = data.available_display_fonts || availableFonts;
+  rasterSafeRoles = data.raster_safe_roles || ["display"];
   renderAdminFields();
+}
+
+function renderAdminAlignment() {
+  if (!Object.keys(adminAlignmentState).length) return;
+
+  const heading = document.createElement("h4");
+  heading.className = "admin-subheading";
+  heading.textContent = "Text location (alignment)";
+  adminFields.appendChild(heading);
+
+  const grid = document.createElement("div");
+  grid.className = "admin-fields";
+
+  Object.keys(adminAlignmentState).forEach(role => {
+    const row = document.createElement("div");
+    row.className = "admin-field-row";
+
+    const label = document.createElement("label");
+    label.textContent = ALIGN_ROLE_LABELS[role] || role;
+    row.appendChild(label);
+
+    const select = document.createElement("select");
+    select.className = "admin-font-select";
+    ["left", "center", "right"].forEach(value => {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = value[0].toUpperCase() + value.slice(1);
+      if (value === adminAlignmentState[role]) opt.selected = true;
+      select.appendChild(opt);
+    });
+    select.addEventListener("change", () => { adminAlignmentState[role] = select.value; });
+    row.appendChild(select);
+
+    grid.appendChild(row);
+  });
+
+  adminFields.appendChild(grid);
+}
+
+// Document-wide default for {category,subgroup}_uppercase -- the same
+// three-way choice as the per-page override (buildPageUppercaseField)
+// minus "Use document default", since this setting IS the document
+// default that option falls back to.
+function renderAdminCasing() {
+  if (!Object.keys(adminCasingState).length) return;
+
+  const heading = document.createElement("h4");
+  heading.className = "admin-subheading";
+  heading.textContent = "Heading casing";
+  adminFields.appendChild(heading);
+
+  const grid = document.createElement("div");
+  grid.className = "admin-fields";
+
+  Object.keys(adminCasingState).forEach(key => {
+    const row = document.createElement("div");
+    row.className = "admin-field-row";
+
+    const label = document.createElement("label");
+    label.textContent = CASING_ROLE_LABELS[key] || key;
+    row.appendChild(label);
+
+    const select = document.createElement("select");
+    select.className = "admin-font-select";
+    const current = adminCasingState[key];
+    const choices = [
+      { value: "true", text: "ALL CAPS", match: current === true },
+      { value: "lower", text: "small letters (lowercase)", match: current === "lower" },
+      { value: "false", text: "Keep as typed", match: current === false },
+    ];
+    choices.forEach(({ value, text, match }) => {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = text;
+      if (match) opt.selected = true;
+      select.appendChild(opt);
+    });
+    select.addEventListener("change", () => {
+      adminCasingState[key] = select.value === "true" ? true : select.value === "lower" ? "lower" : false;
+    });
+    row.appendChild(select);
+
+    grid.appendChild(row);
+  });
+
+  adminFields.appendChild(grid);
 }
 
 function renderAdminFonts() {
@@ -874,9 +1388,10 @@ function renderAdminFonts() {
     const select = document.createElement("select");
     select.className = "admin-font-select";
     const current = adminFontsState[role];
-    // Titles are drawn as images so they can use any font, including the
-    // PostScript-outline ones that can't be embedded as live text.
-    const pool = role === "display" ? availableDisplayFonts : availableFonts;
+    // Raster-safe roles (display, and category/subgroup where supported)
+    // can use any font, including PostScript-outline ones that can't be
+    // embedded as live text -- see fontPoolForRole/rasterSafeRoles.
+    const pool = fontPoolForRole(role);
     const options = pool.includes(current) ? pool : [current, ...pool];
 
     options.forEach(path => {
@@ -942,6 +1457,8 @@ function renderAdminFields() {
   }
 
   renderAdminFonts();
+  renderAdminAlignment();
+  renderAdminCasing();
 }
 
 async function saveAdminFields() {
@@ -951,11 +1468,18 @@ async function saveAdminFields() {
     const res = await fetch(`/api/layout?template=${encodeURIComponent(currentTemplateId)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fields: adminFieldsState, fonts: adminFontsState }),
+      body: JSON.stringify({
+        fields: adminFieldsState,
+        fonts: adminFontsState,
+        alignment: adminAlignmentState,
+        casing: adminCasingState,
+      }),
     });
     const result = await res.json();
     adminFieldsState = result.fields || adminFieldsState;
     adminFontsState = result.fonts || adminFontsState;
+    adminCasingState = result.casing || adminCasingState;
+    adminAlignmentState = result.alignment || adminAlignmentState;
     renderAdminFields();
     adminStatus.textContent = "✅ Saved. Preview or Save the menu to see the new layout.";
   } catch (e) {
@@ -965,8 +1489,12 @@ async function saveAdminFields() {
   }
 }
 
-adminToggleBtn.addEventListener("click", () => {
-  adminPanel.hidden = !adminPanel.hidden;
+railBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const target = btn.dataset.panel;
+    railBtns.forEach(b => b.classList.toggle("active", b === btn));
+    dockPanels.forEach(p => p.classList.toggle("active", p.id === `panel-${target}`));
+  });
 });
 adminSaveBtn.addEventListener("click", saveAdminFields);
 adminPreviewBtn.addEventListener("click", async () => {
@@ -976,7 +1504,7 @@ adminPreviewBtn.addEventListener("click", async () => {
 
 async function saveMenu() {
   saveBtn.disabled = true;
-  saveBtn.textContent = "Saving…";
+  saveBtnLabel.textContent = "Saving…";
   saveStatus.innerHTML = "";
 
   try {
@@ -1001,7 +1529,7 @@ async function saveMenu() {
     saveStatus.innerHTML = `<div class="err">Something went wrong saving. Please try again.</div>`;
   } finally {
     saveBtn.disabled = false;
-    saveBtn.textContent = "💾 Save & Create Print PDF";
+    saveBtnLabel.textContent = "Save & Create PDF";
   }
 }
 

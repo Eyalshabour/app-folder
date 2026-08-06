@@ -1,0 +1,44 @@
+{
+  "courses": [
+    {
+      "description": "s\u00e9riole, cerise, machleb - couteaux, tarama, figue - tarte ayran, wakame, concombre arm\u00e9nien",
+      "name": "TOUR DAnS LA VIEILLE VILLE"
+    },
+    {
+      "description": "betterave, moutarde de p\u00e9pins de raisin, shiso rouge, galanga",
+      "name": "BABUSHKA",
+      "wine": "Borgogno \" Derthona\" 2022 , Pi\u00e9mont, Italie"
+    },
+    {
+      "description": "consomm\u00e9 de tomate, crevette tigr\u00e9e, concombre fum\u00e9, liv\u00e8che",
+      "name": "ADOM ADOM",
+      "wine": "Holdvogly \u00abVision\u00bb 2019, Tokaji, Hongrie"
+    },
+    {
+      "description": "oeuf mollet, mousse de tahini, relish, mulukhiyah, poutargue, oeufs de truite, challah",
+      "name": "HAMInADOS",
+      "wine": "Barbadillo \u00abPatinegro\u00bb 2023, Andalousie, Espagne"
+    },
+    {
+      "description": "cabillaud matur\u00e9, pois chiches frits, girolles, persil, eau de shifka",
+      "name": "PATRIYOTE",
+      "wine": "Ch\u00e2teau Pauqu\u00e9 \u00abClos du Paradis\u00bb 2001, Moselle, Luxembourg"
+    },
+    {
+      "description": "ris de veau, courgette, ail confit, feuilles de moutarde, vinaigrette de veau",
+      "name": "ris d'orloff",
+      "wine": "Koehler-Ruprecht \u00abKabinett Trocken\u00bb 2024, Pfalz, Allemagne"
+    }
+  ],
+  "dessert": [
+    {
+      "description": "Past\u00e8que, feta, huile de verveine, sorbet au concombre arm\u00e9nien",
+      "name": "AVATIACH"
+    },
+    {
+      "description": "Huile de feuille de vigne, raisin, riz souffl\u00e9, glace \u00e0 l'ayran",
+      "name": "GEFEn"
+    }
+  ],
+  "title": "LE VOYAGE SHABOUR"
+}

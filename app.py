@@ -71,7 +71,20 @@ def drive_content_filename(template_id, language):
 # Fields in a layout config that the admin panel is allowed to show/edit.
 # Deliberately excludes "fonts" (file paths -- a typo would break rendering
 # entirely) and "layout_type"/"_comment" (structural, not visual tuning).
-ADMIN_EDITABLE_SKIP_KEYS = {"fonts", "layout_type", "_comment"}
+# category_uppercase/subgroup_uppercase are also excluded from the generic
+# fields loop -- they're tri-state (True/"lower"/False), not a plain
+# bool/number/string the generic UI knows how to render, so they get their
+# own "casing" section (see get_layout/save_layout) mirroring the per-page
+# override dropdown in the content editor.
+ADMIN_EDITABLE_SKIP_KEYS = {
+    "fonts", "alignment", "layout_type", "_comment",
+    "category_uppercase", "subgroup_uppercase",
+}
+ALLOWED_ALIGNMENTS = {"left", "center", "right"}
+# The three real casing values _apply_casing understands (see
+# pdf_generator.py): True (ALL CAPS), "lower" (all-lowercase), False (kept
+# exactly as typed).
+ALLOWED_CASING_VALUES = (True, "lower", False)
 
 
 def render_pdf_for_template(template_id, layout_cfg, menu_data, output_path):
@@ -81,6 +94,10 @@ def render_pdf_for_template(template_id, layout_cfg, menu_data, output_path):
         return pdf_generator.generate_price_card_pdf(menu_data, layout_cfg, output_path, BASE_DIR)
     elif layout_type == "categorized_list":
         return pdf_generator.generate_categorized_list_pdf(menu_data, layout_cfg, output_path, BASE_DIR)
+    elif layout_type == "recipe_card":
+        return pdf_generator.generate_recipe_card_pdf(menu_data, layout_cfg, output_path, BASE_DIR)
+    elif layout_type == "simple_recipe_card":
+        return pdf_generator.generate_simple_recipe_card_pdf(menu_data, layout_cfg, output_path, BASE_DIR)
     else:
         return pdf_generator.generate_pdf(menu_data, layout_cfg, output_path, BASE_DIR)
 
@@ -88,6 +105,14 @@ def render_pdf_for_template(template_id, layout_cfg, menu_data, output_path):
 @app.route("/")
 def index():
     return render_template("index.html", drive_connected=drive_service.is_configured())
+
+
+@app.route("/assets/<path:filename>")
+def assets(filename):
+    """Serves the brand font/icon files (assets/fonts, assets/icons) so the
+    editor app's own UI can use them too -- e.g. the SHABOUR display font
+    via @font-face in style.css -- not just the generated PDFs."""
+    return send_from_directory(os.path.join(BASE_DIR, "assets"), filename)
 
 
 @app.route("/api/templates", methods=["GET"])
@@ -210,8 +235,13 @@ def _is_embeddable_as_body(abs_path):
 def available_fonts(body_only=False):
     """Font files installed in assets/fonts.
 
-    body_only=True filters to those that can be embedded as normal text, so
-    only the display role is offered fonts that must be rasterised.
+    body_only=True filters to those that can be embedded as normal text.
+    Some roles' drawing code (see ROLES_WITH_RASTER_FALLBACK below) can
+    fall back to rasterising a font it can't embed, so they're offered the
+    full list; roles without that fallback (item, note, body) would either
+    crash (c.setFont(None, ...)) or silently drop the text if handed a
+    PostScript/CFF-outline font reportlab can't embed, so they only get
+    the body_only-filtered list.
     """
     if not os.path.isdir(FONTS_DIR):
         return []
@@ -223,6 +253,19 @@ def available_fonts(body_only=False):
             continue
         out.append(f"assets/fonts/{name}")
     return out
+
+
+# Roles whose drawing code (see _draw_role_text in pdf_generator.py) checks
+# a font's "raster" flag and rasterises through PIL when it can't be
+# embedded as live text -- so they can safely use ANY installed font, the
+# same way the display/title role always could. Every other role (item,
+# note, body, footer, etc.) draws with a direct c.setFont(name, ...) call
+# that has no such fallback, so it's restricted to embeddable fonts only.
+ROLES_WITH_RASTER_FALLBACK = {"display", "category", "subgroup"}
+
+
+def fonts_for_role(role):
+    return available_fonts(body_only=(role not in ROLES_WITH_RASTER_FALLBACK))
 
 
 @app.route("/api/fonts", methods=["GET"])
@@ -246,10 +289,23 @@ def get_layout():
     return jsonify({
         "fields": fields,
         "fonts": layout_cfg.get("fonts", {}),
-        # The display role is rasterised, so it can use any font. Every other
-        # role is drawn as real text and needs an embeddable one.
+        "alignment": layout_cfg.get("alignment", {}),
+        # Document-wide default casing for category/subgroup headings --
+        # only meaningful for the categorized-list renderer (wine list,
+        # digestifs), which is the only one that reads these keys. Falls
+        # back to the same defaults pdf_generator.py uses when the keys
+        # aren't in the layout config at all (True / False).
+        "casing": {
+            "category_uppercase": layout_cfg.get("category_uppercase", True),
+            "subgroup_uppercase": layout_cfg.get("subgroup_uppercase", False),
+        } if layout_cfg.get("layout_type") == "categorized_list" else {},
+        # display/category/subgroup can rasterise a font their drawing code
+        # can't embed as live text, so they're offered every installed
+        # font; other roles (item, note, body, ...) only get the ones
+        # reportlab can embed directly -- see ROLES_WITH_RASTER_FALLBACK.
         "available_fonts": available_fonts(body_only=True),
         "available_display_fonts": available_fonts(),
+        "raster_safe_roles": sorted(ROLES_WITH_RASTER_FALLBACK),
     })
 
 
@@ -275,14 +331,31 @@ def save_layout():
     # break every render.
     font_updates = payload.get("fonts")
     if isinstance(font_updates, dict):
-        allowed_display = set(available_fonts())
-        allowed_body = set(available_fonts(body_only=True))
         fonts_cfg = dict(layout_cfg.get("fonts", {}))
         for role, rel_path in font_updates.items():
-            allowed = allowed_display if role == "display" else allowed_body
+            allowed = set(fonts_for_role(role))
             if rel_path in allowed:
                 fonts_cfg[role] = rel_path
         layout_cfg["fonts"] = fonts_cfg
+
+    # Alignment is a per-role choice of "left"/"center"/"right" -- validated
+    # against a fixed allow-list the same way fonts are, so a bad value
+    # can't silently break a role's rendering.
+    align_updates = payload.get("alignment")
+    if isinstance(align_updates, dict):
+        align_cfg = dict(layout_cfg.get("alignment", {}))
+        for role, value in align_updates.items():
+            if value in ALLOWED_ALIGNMENTS:
+                align_cfg[role] = value
+        layout_cfg["alignment"] = align_cfg
+
+    # Document-wide default casing (see get_layout) -- written directly as
+    # top-level keys, same as pdf_generator.py reads them.
+    casing_updates = payload.get("casing")
+    if isinstance(casing_updates, dict):
+        for key in ("category_uppercase", "subgroup_uppercase"):
+            if key in casing_updates and casing_updates[key] in ALLOWED_CASING_VALUES:
+                layout_cfg[key] = casing_updates[key]
 
     for key, new_value in updates.items():
         if key in ADMIN_EDITABLE_SKIP_KEYS:
@@ -311,8 +384,14 @@ def save_layout():
             if k not in ADMIN_EDITABLE_SKIP_KEYS and isinstance(v, (int, float, bool, str))
         },
         "fonts": layout_cfg.get("fonts", {}),
+        "alignment": layout_cfg.get("alignment", {}),
+        "casing": {
+            "category_uppercase": layout_cfg.get("category_uppercase", True),
+            "subgroup_uppercase": layout_cfg.get("subgroup_uppercase", False),
+        } if layout_cfg.get("layout_type") == "categorized_list" else {},
         "available_fonts": available_fonts(body_only=True),
         "available_display_fonts": available_fonts(),
+        "raster_safe_roles": sorted(ROLES_WITH_RASTER_FALLBACK),
     })
 
 

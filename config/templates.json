@@ -50,39 +50,36 @@
       ]
     },
     {
-      "id": "6_kosher_temps_voyagette",
-      "name": "VOYAGETTE KOSHER 6 TEMPS (Lunch)",
-      "layout_config": "config/templates/voyage_shabour.json",
+      "id": "recipe_card",
+      "name": "Recipe Card (collab, e.g. Shabour x Licoük)",
+      "layout_config": "config/templates/recipe_card.json",
       "languages": [
-        "en",
-        "fr"
+        "en"
       ]
     },
     {
-      "id": "6_pairing_temps_voyagette",
-      "name": "VOYAGETTE 6 TEMPS PAIRING (Lunch Wine Pairing)",
-      "layout_config": "config/templates/voyage_pairing.json",
+      "id": "olive_oil_gelato",
+      "name": "Recipe Card - Olive Oil Gelato (SHABOUR X LICOÜK)",
+      "layout_config": "config/templates/recipe_card.json",
       "languages": [
-        "en",
-        "fr"
+        "en"
       ]
     },
     {
-      "id": "6_temps_veggie_voyagette",
-      "name": "VOYAGETTE VEGGIE 6 TEMPS (Lunch)",
-      "layout_config": "config/templates/voyage_shabour.json",
+      "id": "challah",
+      "name": "Recipe Card - La Challah Shabour",
+      "layout_config": "config/templates/simple_recipe_card.json",
       "languages": [
-        "en",
-        "fr"
+        "fr",
+        "en"
       ]
     },
     {
-      "id": "6_temps_voyagette",
-      "name": "VOYAGETTE 6 TEMPS (Lunch)",
-      "layout_config": "config/templates/voyage_shabour.json",
+      "id": "tahini_cookies",
+      "name": "Recipe Card - Tahini Cookies",
+      "layout_config": "config/templates/simple_recipe_card.json",
       "languages": [
-        "en",
-        "fr"
+        "en"
       ]
     },
     {
@@ -104,8 +101,8 @@
       ]
     },
     {
-      "id": "pairing_premium_voyage",
-      "name": "VOYAGE PAIRING Premium (Dinner Wine Pairing)",
+      "id": "pairing_monde_voyage",
+      "name": "VOYAGE PAIRING Monde (Dinner Wine Pairing)",
       "layout_config": "config/templates/voyage_pairing.json",
       "languages": [
         "en",
@@ -113,8 +110,17 @@
       ]
     },
     {
-      "id": "pairing_voyage",
-      "name": "VOYAGE PAIRING (Dinner Wine Pairing)",
+      "id": "pairing_orient_voyage",
+      "name": "VOYAGE PAIRING Moyen Orient (Dinner Wine Pairing)",
+      "layout_config": "config/templates/voyage_pairing.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "pairing_france_voyage",
+      "name": "VOYAGE PAIRING France (Dinner Wine Pairing)",
       "layout_config": "config/templates/voyage_pairing.json",
       "languages": [
         "en",
@@ -124,6 +130,24 @@
     {
       "id": "pairing_voyagette",
       "name": "VOYAGETTE PAIRING art de la table (Lunch Wine Pairing)",
+      "layout_config": "config/templates/voyage_pairing.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "6_temps_voyagette",
+      "name": "VOYAGETTE 6 TEMPS (Lunch)",
+      "layout_config": "config/templates/voyage_shabour.json",
+      "languages": [
+        "en",
+        "fr"
+      ]
+    },
+    {
+      "id": "6_pairing_temps_voyagette",
+      "name": "VOYAGETTE 6 TEMPS PAIRING (Lunch Wine Pairing)",
       "layout_config": "config/templates/voyage_pairing.json",
       "languages": [
         "en",

@@ -1,0 +1,27 @@
+{
+  "_comment": "Layout for simple family-recipe cards (e.g. Challah, Tahini Cookies) -- a centered title, an 'INGREDIENTS:' subtitle + list (NAME : qty, one per line), then wrapped method paragraphs. Title is set in the brand display font (SHABOUR-SemiBold, rasterized -- it has PostScript outlines reportlab can't embed as live text), matching every other template's title treatment. The 'INGREDIENTS:' subtitle and all body copy (ingredient lines, method) use a plain readable Avenir weight instead, for print legibility. Printed two-up (2 identical cards side by side) on one landscape sheet for cutting, same physical layout as the tasting menu cards.",
+  "layout_type": "simple_recipe_card",
+  "card_width": 420.94,
+  "card_height": 595.28,
+  "sheet_width": 841.89,
+  "sheet_height": 595.28,
+  "margin_top": 70,
+  "margin_bottom": 50,
+  "margin_side": 46,
+  "title_size": 20,
+  "gap_after_title": 30,
+  "ingredients_label_size": 10,
+  "gap_after_ingredients_label": 14,
+  "ingredient_size": 10,
+  "gap_after_ingredient": 6,
+  "gap_after_ingredients_block": 24,
+  "method_size": 10,
+  "method_line_height": 14,
+  "gap_after_method_step": 16,
+  "crop_marks": true,
+  "fonts": {
+    "display": "assets/fonts/SHABOUR-SemiBold.otf",
+    "subtitle": "assets/fonts/AvenirHeavy.ttf",
+    "body": "assets/fonts/AvenirLight.ttf"
+  }
+}

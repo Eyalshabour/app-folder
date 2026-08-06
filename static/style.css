@@ -1,5 +1,14 @@
 * { box-sizing: border-box; }
 
+/* Browsers give <input> elements an intrinsic minimum width (~170-190px)
+   that flexbox respects by default (flex items don't shrink below their
+   content's min-width unless told to). In the docked right panel -- much
+   narrower than the old full-width form column -- that default silently
+   pushes rows (and their ancestors) wider than the panel, overflowing the
+   viewport. Reset it everywhere so flex-basis/flex percentages are what
+   actually control input width. */
+input, select, textarea { min-width: 0; }
+
 :root {
   --surface: #ffffff;
   --surface-muted: #f6f6f8;
@@ -24,15 +33,42 @@
   --radius-lg: 14px;
   --shadow-sm: 0 1px 2px rgba(16,16,20,0.05);
   --shadow-md: 0 2px 10px rgba(16,16,20,0.07);
+  --shadow-lg: 0 8px 28px rgba(16,16,20,0.14);
+  --rail-width: 76px;
+  --dock-width: 420px;
+  --canvas-bg: #eceaea;
 }
 
+/* The real Shabour brand display face -- used elsewhere in this file only
+   for the app's own chrome (toolbar title, section labels, page-empty
+   states), not the generated menus. Browsers handle this OTF's
+   PostScript/CFF outlines fine via @font-face; the "must rasterize"
+   constraint documented in pdf_generator.py is specific to reportlab. */
+@font-face {
+  font-family: "Shabour";
+  src: url("/assets/fonts/SHABOUR-SemiBold.otf") format("opentype");
+  font-weight: 600;
+  font-display: swap;
+}
+
+html, body { height: 100%; }
 body {
   font-family: "Inter", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
   background: var(--surface-muted);
   color: var(--text-primary);
   margin: 0;
-  padding: 0 0 110px 0;
+  padding: 0;
   -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* App shell: header (+ optional notice) on top, everything else fills the
+   rest of the viewport -- like a real design tool window rather than a
+   scrolling marketing page. */
+.app-shell {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ------------------------------------------------------------------ */
@@ -44,17 +80,23 @@ body {
   border-bottom: 1px solid var(--border);
   padding: 10px 20px;
   display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
-.toolbar-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.toolbar-brand { display: flex; align-items: center; gap: 11px; flex-shrink: 0; }
 .toolbar-logo {
-  width: 32px; height: 32px; border-radius: 8px; background: var(--accent); color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700; letter-spacing: .02em;
+  width: 34px; height: 34px; border-radius: 8px; background: var(--accent);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
+.toolbar-logo img { width: 20px; height: 20px; object-fit: contain; filter: brightness(0) invert(1); }
 .toolbar-titles { display: flex; flex-direction: column; line-height: 1.2; }
-.toolbar-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
-.toolbar-subtitle { font-size: 12px; color: var(--text-tertiary); }
+.toolbar-title {
+  font-family: "Shabour", "Inter", sans-serif; font-size: 17px; font-weight: 600;
+  color: var(--text-primary); letter-spacing: .02em;
+}
+.toolbar-subtitle {
+  font-size: 10.5px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: .08em; font-weight: 600;
+}
 
 .toolbar-controls { display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap; flex: 1; }
 .toolbar-field { display: flex; flex-direction: column; gap: 5px; }
@@ -102,19 +144,39 @@ body {
 }
 .logout-button:hover { background: var(--surface-muted); color: var(--text-primary); }
 
+#save-status { font-size: 12.5px; max-width: 260px; text-align: right; line-height: 1.4; }
+#save-status .ok { color: var(--success); }
+#save-status .warn { color: var(--warning); }
+#save-status .err { color: var(--danger); }
+#save-status a { color: var(--accent); font-weight: 600; }
+
+.save-button {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: inherit; font-size: 13.5px; font-weight: 600; padding: 10px 20px; border-radius: 999px; border: none;
+  background: var(--accent); color: #fff; cursor: pointer; box-shadow: 0 2px 8px rgba(138,82,39,0.3);
+  flex-shrink: 0;
+}
+.save-button:hover { background: var(--accent-hover); }
+.save-button:disabled { background: var(--border-strong); cursor: default; box-shadow: none; color: var(--text-tertiary); }
+
 .notice-bar {
   background: var(--warning-soft); color: var(--warning);
   padding: 9px 20px; font-size: 13px; text-align: center; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 /* ------------------------------------------------------------------ */
-/* Admin (layout settings) panel                                       */
+/* Admin (layout settings) panel -- lives inside the right dock, so it   */
+/* fills the panel width rather than being its own centred card.        */
 /* ------------------------------------------------------------------ */
 .admin-panel {
-  max-width: 1100px; margin: 16px auto 0; padding: 20px 22px; border-radius: var(--radius-lg);
-  background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  padding: 18px; border-radius: var(--radius-lg);
+  background: var(--surface); border: 1px solid var(--border);
 }
-.admin-panel-header h3 { margin: 0 0 4px; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.admin-panel-header h3 {
+  margin: 0 0 4px; font-family: "Shabour", "Inter", sans-serif; font-size: 16px;
+  font-weight: 600; letter-spacing: .01em; color: var(--text-primary);
+}
 .admin-panel-sub { margin: 0 0 16px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
 .admin-fields {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px 18px;
@@ -152,60 +214,81 @@ body {
 #admin-status { font-size: 12.5px; color: var(--success); }
 
 /* ------------------------------------------------------------------ */
-/* Editor layout: form ("inspector") on the left, a persistent          */
-/* live-preview canvas ("artboard") on the right.                       */
+/* Workspace: a left icon rail (Canva-style panel switcher), a centred  */
+/* canvas holding the live-preview "page" on a pasteboard backdrop      */
+/* (InDesign-style), and a docked right panel with the active form.     */
 /* ------------------------------------------------------------------ */
-.editor-layout {
-  display: flex; align-items: flex-start; gap: 20px;
-  max-width: 1400px; margin: 20px auto; padding: 0 20px;
+.workspace {
+  flex: 1; min-height: 0; display: flex; overflow: hidden;
 }
-#menu-root {
-  flex: 1 1 480px; min-width: 320px; max-width: 640px;
+
+.rail {
+  flex: 0 0 var(--rail-width); width: var(--rail-width);
+  background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 12px 8px;
+}
+.rail-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  font-family: inherit; font-size: 10.5px; font-weight: 600; color: var(--text-tertiary);
+  background: transparent; border: none; border-radius: var(--radius-md); padding: 10px 4px; cursor: pointer;
+}
+.rail-btn svg { color: inherit; }
+.rail-btn:hover { background: var(--surface-muted); color: var(--text-primary); }
+.rail-btn.active { background: var(--accent-soft); color: var(--accent); }
+
+.canvas-area {
+  flex: 1; min-width: 0; display: flex; flex-direction: column;
+  background: var(--canvas-bg);
+}
+.canvas-toolbar {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  padding: 10px 20px; border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.preview-status-text { font-size: 11.5px; color: var(--text-tertiary); min-height: 14px; }
+.preview-refresh-button { font-size: 12.5px; padding: 6px 12px; background: var(--surface); }
+.canvas-stage {
+  flex: 1; min-height: 0; overflow: auto;
+  display: flex; align-items: stretch; justify-content: center;
+  padding: 32px;
 }
 .loading { text-align: center; color: var(--text-tertiary); font-size: 14px; padding: 60px 20px; }
 
-.preview-panel {
-  flex: 1 1 460px; min-width: 320px;
-  position: sticky; top: 20px;
-  background: var(--surface-muted); border-radius: var(--radius-lg); border: 1px solid var(--border);
-  padding: 14px; display: flex; flex-direction: column;
-  max-height: calc(100vh - 40px);
-}
-.preview-panel-header {
-  display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 10px;
-}
-.preview-panel-header h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--text-primary); }
-.preview-panel-status { display: flex; align-items: center; gap: 10px; }
-.preview-status-text { font-size: 11.5px; color: var(--text-tertiary); min-height: 14px; }
-.preview-refresh-button { font-size: 12.5px; padding: 6px 12px; }
 .preview-frame-wrap {
-  position: relative; flex: 1; min-height: 420px;
-  background:
-    linear-gradient(45deg, #eeeeef 25%, transparent 25%),
-    linear-gradient(-45deg, #eeeeef 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #eeeeef 75%),
-    linear-gradient(-45deg, transparent 75%, #eeeeef 75%);
-  background-size: 16px 16px;
-  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
-  background-color: #f1f1f3;
-  border-radius: var(--radius-md);
-  padding: 18px;
+  position: relative; width: 100%; max-width: 980px; flex-shrink: 0;
 }
 .preview-placeholder {
-  position: absolute; inset: 18px; display: flex; align-items: center; justify-content: center;
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   text-align: center; color: var(--text-tertiary); font-size: 13px; padding: 24px; margin: 0;
-  background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--surface); border-radius: 2px; border: 1px solid var(--border); box-shadow: var(--shadow-lg);
 }
+/* The JS toggles the "hidden" attribute to show/hide this box once a PDF is
+   ready, but an author-stylesheet rule always wins over the browser's own
+   "[hidden] { display: none }" default (author origin beats user-agent
+   origin regardless of specificity) -- so without this rule the placeholder
+   never actually disappears and just sits on top of the loaded preview. */
+.preview-placeholder[hidden] { display: none; }
 .preview-frame {
-  width: 100%; height: 100%; min-height: 384px; border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm); background: #fff; box-shadow: var(--shadow-md);
+  width: 100%; height: 100%; border: none;
+  border-radius: 2px; background: #fff; box-shadow: var(--shadow-lg);
 }
 
+.dock {
+  flex: 0 0 var(--dock-width); width: var(--dock-width);
+  background: var(--surface-muted); border-left: 1px solid var(--border);
+  overflow-y: auto;
+}
+.dock-panel { display: none; padding: 18px; }
+.dock-panel.active { display: block; }
+#menu-root { width: 100%; }
+
 @media (max-width: 1000px) {
-  .editor-layout { flex-direction: column; }
-  #menu-root { max-width: none; width: 100%; }
-  .preview-panel { position: static; max-height: none; width: 100%; }
-  .preview-frame-wrap, .preview-frame { min-height: 500px; }
+  body { overflow: auto; }
+  .app-shell { height: auto; min-height: 100vh; }
+  .workspace { flex-direction: column; }
+  .rail { flex-direction: row; width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+  .canvas-stage { padding: 16px; }
+  .preview-frame-wrap { max-width: none; }
+  .dock { width: 100%; flex-basis: auto; }
 }
 
 /* ------------------------------------------------------------------ */
@@ -242,7 +325,7 @@ body {
   padding: 14px 0; border-top: 1px solid var(--border);
 }
 .item-row:first-of-type { border-top: none; }
-.item-fields { flex: 1; display: grid; grid-template-columns: 1.3fr 2.2fr; gap: 10px; }
+.item-fields { flex: 1; display: grid; grid-template-columns: 1fr; gap: 10px; min-width: 0; }
 .item-fields .field-wine { grid-column: 1 / -1; }
 .field-wine input { background: var(--accent-soft); border-color: #e7cdb0; }
 .field label { display: block; font-size: 11px; color: var(--text-tertiary); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
@@ -302,23 +385,6 @@ body {
 .heading-row .heading-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
 .heading-row .remove-item-button { margin-top: 0; }
 
-/* ------------------------------------------------------------------ */
-/* Save bar                                                             */
-/* ------------------------------------------------------------------ */
-#save-bar {
-  position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface);
-  border-top: 1px solid var(--border); padding: 14px 20px; text-align: center;
-  display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;
-  box-shadow: 0 -2px 10px rgba(16,16,20,0.05);
-}
-.save-button {
-  display: inline-flex; align-items: center; gap: 9px;
-  font-family: inherit; font-size: 15px; font-weight: 600; padding: 13px 26px; border-radius: var(--radius-md); border: none;
-  background: var(--success); color: #fff; cursor: pointer; box-shadow: 0 2px 6px rgba(26,122,76,0.3);
-}
-.save-button:hover { background: #146b41; }
-.save-button:disabled { background: var(--border-strong); cursor: default; box-shadow: none; color: var(--text-tertiary); }
-#save-status { font-size: 13.5px; }
 
 /* ------------------------------------------------------------------ */
 /* Categorized-list menus (Wine List, Digestifs...): pages > categories */
@@ -373,6 +439,35 @@ body {
 .catlist-category-name-input:focus, .catlist-category-note-input:focus { outline: none; border-color: var(--accent); }
 .catlist-category-body { padding: 4px 13px 13px; }
 
+.catlist-page-overrides {
+  margin: 0 16px 14px; background: var(--surface-sunken); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 2px 13px 13px;
+}
+.catlist-page-overrides > summary {
+  list-style: none; cursor: pointer; padding: 11px 0; font-size: 13px; font-weight: 600;
+  color: var(--text-secondary); display: flex; align-items: center; gap: 8px;
+}
+.catlist-page-overrides > summary::-webkit-details-marker { display: none; }
+.catlist-page-overrides > summary::before { content: "▸"; color: var(--text-tertiary); font-size: 11px; }
+.catlist-page-overrides[open] > summary::before { content: "▾"; }
+.catlist-page-overrides .admin-panel-sub { margin: 0 0 12px; }
+.page-overrides-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 12px;
+}
+.page-overrides-reset {
+  width: auto; height: auto; margin-top: 12px; padding: 7px 12px; border-radius: var(--radius-sm);
+  background: transparent; border: 1px solid var(--border-strong); color: var(--text-secondary); font-size: 12px;
+}
+.page-overrides-reset:hover { background: var(--surface); color: var(--text-primary); }
+.page-overrides-fonts {
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);
+}
+.page-overrides-fonts .admin-subheading { grid-column: auto; margin: 0 0 10px; padding-top: 0; border-top: none; }
+.page-overrides-fonts .admin-font-hint { margin-top: 8px; }
+.page-overrides-uppercase {
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); max-width: 320px;
+}
+
 .move-controls { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
 .item-row .move-controls { margin-top: 20px; }
 .move-button {
@@ -401,9 +496,3 @@ body {
   text-align: right;
 }
 .catlist-item-name-input:focus, .catlist-item-price-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
-
-#save-status { margin: 0; font-size: 13.5px; }
-#save-status .ok { color: var(--success); }
-#save-status .warn { color: var(--warning); }
-#save-status .err { color: var(--danger); }
-#save-status a { color: var(--accent); font-weight: 600; }

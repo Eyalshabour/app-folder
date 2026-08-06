@@ -1,0 +1,44 @@
+{
+  "courses": [
+    {
+      "description": "langoustine, cherry, machleb - razor clams, tarama, fig gel - ayran tart, wakame, armenian cucumber",
+      "name": "TOUR In THE OLD CITY"
+    },
+    {
+      "description": "beetroot, grape-seed mustard, red shiso, galangal",
+      "name": "BABUSHKA",
+      "wine": "Marcel Deiss \"Rotenberg\" 2013, Alsace"
+    },
+    {
+      "description": "tomato consomm\u00e9, tiger shrimp, smoked cucumber, lovage",
+      "name": "ADOM ADOM",
+      "wine": "Domaine Damien Laureau \u00abRoche aux Moines\u00bb 2022, Savenni\u00e8res, Loire Valley"
+    },
+    {
+      "description": "soft boiled egg, tahini foam, relish, mulukhiyah, bottarga, trout eggs, challah",
+      "name": "HAMInADOS",
+      "wine": "Domaine de la Pinte \u00abSavagnin\u00bb 2018, Arbois, Jura"
+    },
+    {
+      "description": "aged cod, fried chickpeas, girolles, parsley, shifka water",
+      "name": "PATRIYOTE",
+      "wine": "Ch\u00e2teau de Beaucastel \u00abRoussanne\u00bb 2022, Ch\u00e2teauneuf-du-Pape, Rh\u00f4ne Valley"
+    },
+    {
+      "description": "Sweetbread, zucchini flower, confit garlic, mustard leaves, veal vinaigrette",
+      "name": "ris d'orloff",
+      "wine": "Hudelot-Baillet \u00abLes Charmes\u00bb 2023, Chambolle-Musigny 1er Cru, Burgundy"
+    }
+  ],
+  "dessert": [
+    {
+      "description": "water melon, feta, verbena oil, armenian cucumber sorbet",
+      "name": "AVATIACH"
+    },
+    {
+      "description": "vine-leaf oil, grapes, puffed rice, ayran ice cream",
+      "name": "GEFEn"
+    }
+  ],
+  "title": "THE VOYAGE SHABOUR"
+}

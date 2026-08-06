@@ -5,12 +5,12 @@
       "name": "TOUR DAnS LA VIEILLE VILLE"
     },
     {
-      "description": "navet, petit pois, kasu, citron, noix, urfa",
-      "name": "OREZ VE AFUnA"
+      "description": "betterave, moutarde de p\u00e9pins de raisin, shiso rouge, galanga",
+      "name": "BABUSHKA"
     },
     {
-      "description": "Brocoli, smoked carrot, g\u00e9n\u00e9pi bisque, harissa, cumin, celery",
-      "name": "bisqotec"
+      "description": "consomm\u00e9 de tomate, concombre fum\u00e9, liv\u00e8che",
+      "name": "ADOM ADOM"
     },
     {
       "description": "oeuf mollet, mousse de tahini, relish, mulukhiyah, caviar de carottes, challah",
@@ -27,8 +27,12 @@
   ],
   "dessert": [
     {
-      "description": "freekeh souffl\u00e9, croustillant baharat, cr\u00e8me poivre-canelle, sorbet citron bergamote",
-      "name": "EASY PEASY LEMOn FREEKEH"
+      "description": "Past\u00e8que, feta, huile de verveine, sorbet au concombre arm\u00e9nien",
+      "name": "AVATIACH"
+    },
+    {
+      "description": "Huile de feuille de vigne, raisin, riz souffl\u00e9, glace \u00e0 l'ayran",
+      "name": "GEFEn"
     }
   ],
   "title": "LE VOYAGE SHABOUR"
