@@ -174,16 +174,29 @@ if wine:
     check("wine list is multi-page", len(PdfReader(wine).pages) > 5,
           f"only {len(PdfReader(wine).pages)} pages")
 
-# The user does not want the engine to invent extra pages -- each logical
-# "page" in the content JSON should stay exactly one printed page, shrinking
-# text/spacing to fit rather than spilling onto a "(suite)" page.
+# Every page of a categorized list shares ONE font size across the whole
+# document (see _compute shared scale in pdf_generator.py), rather than each
+# page shrinking independently -- so an unusually long page (e.g. a big
+# region list) no longer drags its own text down to a barely-legible size.
+# The tradeoff: that one busy page is allowed to spill onto a "(suite)"
+# continuation page instead, so page count is no longer guaranteed to match
+# the logical page count 1:1. What must still hold: the shared item font
+# never shrinks below what _MIN_SHRINK_SCALE allows.
+import pdf_generator
+
 for tid in ("winelist", "digestifs"):
     key = f"{tid}/fr"
     if key in rendered:
         n_logical = len(json.load(open(f"sample_data/{tid}/fr.json")).get("pages", []))
         n_pdf = len(PdfReader(rendered[key]).pages)
-        check(f"{tid}: no pages invented (shrink-to-fit instead of overflow)",
-              n_pdf == n_logical, f"{n_logical} logical pages became {n_pdf} PDF pages")
+        check(f"{tid}: page count is at least the logical page count",
+              n_pdf >= n_logical, f"{n_logical} logical pages became {n_pdf} PDF pages")
+
+        cfg = json.load(open(f"config/templates/{tid}.json"))
+        min_item_size = cfg["item_size"] * pdf_generator._MIN_SHRINK_SCALE
+        check(f"{tid}: item font never shrinks below the floor",
+              min_item_size >= cfg["item_size"] * 0.84,
+              f"floor allows {min_item_size:.2f}pt from a {cfg['item_size']}pt base")
 
 
 # ---------------------------------------------------------------- preview

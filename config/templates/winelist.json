@@ -3,8 +3,8 @@
   "layout_type": "categorized_list",
   "page_width": 595.28,
   "page_height": 841.89,
-  "margin_top": 70,
-  "margin_bottom": 55,
+  "margin_top": 50,
+  "margin_bottom": 40,
   "margin_side": 65,
   "gap_after_page_title": 34,
   "gap_after_category": 10,
@@ -23,5 +23,5 @@
   "category_size": 15.0,
   "note_size": 8,
   "subgroup_size": 9.5,
-  "item_size": 8.5
+  "item_size": 11
 }
