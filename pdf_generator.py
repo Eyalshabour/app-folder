@@ -28,6 +28,7 @@ overflowing off the card.
 """
 import io
 import os
+import re
 
 from PIL import Image, ImageDraw, ImageFont
 from reportlab.pdfgen import canvas
@@ -39,6 +40,18 @@ RENDER_SCALE = 300 / 72.0  # rasterize display-font text at 300dpi equivalent
 
 _registered_fonts = set()
 
+# reportlab bakes these 14 fonts into every PDF reader -- no file, no
+# registration, just use the name directly with c.setFont(). Used for the
+# wine list's serif text roles (category headings + item lines), which
+# match the original InDesign design's classic book-serif look without
+# needing to source and embed an external font file.
+_STANDARD_PDF_FONTS = {
+    "Times-Roman", "Times-Bold", "Times-Italic", "Times-BoldItalic",
+    "Helvetica", "Helvetica-Bold", "Helvetica-Oblique", "Helvetica-BoldOblique",
+    "Courier", "Courier-Bold", "Courier-Oblique", "Courier-BoldOblique",
+    "Symbol", "ZapfDingbats",
+}
+
 
 def _hex_to_rgb(hex_color):
     hex_color = hex_color.lstrip("#")
@@ -46,6 +59,10 @@ def _hex_to_rgb(hex_color):
 
 
 def _register_body_font(path):
+    # A bare standard-font name (not a file path) -- reportlab already
+    # knows it, so there's nothing to register.
+    if path in _STANDARD_PDF_FONTS:
+        return path
     name = os.path.splitext(os.path.basename(path))[0]
     if name not in _registered_fonts:
         pdfmetrics.registerFont(TTFont(name, path))
@@ -56,6 +73,7 @@ def _register_body_font(path):
 def _render_display_text(text, font_path, size_pt):
     """Rasterizes text with the brand display font. Returns (ImageReader,
     width_pt, height_pt) ready to draw on a reportlab canvas."""
+    text = _sanitize_for_display_font(text, font_path)
     px_size = int(round(size_pt * RENDER_SCALE))
     font = ImageFont.truetype(font_path, px_size)
 
@@ -105,6 +123,131 @@ def _draw_display_left(c, text, font_path, size_pt, left_x, baseline_y):
     c.drawImage(img, left_x, baseline_y - h * 0.18, width=w, height=h, mask="auto")
 
 
+def _draw_display_aligned(c, text, font_path, size_pt, left_x, right_x, top_y, align="center"):
+    """Like _draw_display_centered(), but the alignment within [left_x,
+    right_x] is a choice (left/center/right) instead of always centered --
+    used for page titles, whose alignment is now admin-editable. Returns
+    the y position just below the drawn text."""
+    if not text.strip():
+        return top_y
+    img, w, h = _render_display_text(text, font_path, size_pt)
+    if align == "left":
+        x = left_x
+    elif align == "right":
+        x = right_x - w
+    else:
+        x = (left_x + right_x) / 2 - w / 2
+    y = top_y - h
+    c.drawImage(img, x, y, width=w, height=h, mask="auto")
+    return y
+
+
+def _draw_role_text(c, text, font_info, size_pt, left_x, right_x, baseline_y, align="left"):
+    """Draws one line of text for a text role that may be either a live
+    registered font or a rasterised display font (see _resolve_role_fonts),
+    at the given horizontal alignment within [left_x, right_x], sitting on
+    baseline_y. Used for the categorized-list engine's category/subgroup
+    headings, where the same role can be either kind of font depending on
+    which font file the template's config points it at."""
+    if not text.strip():
+        return
+    if font_info["raster"]:
+        img, w, h = _render_display_text(text, font_info["path"], size_pt)
+        if align == "left":
+            x = left_x
+        elif align == "right":
+            x = right_x - w
+        else:
+            x = (left_x + right_x) / 2 - w / 2
+        c.drawImage(img, x, baseline_y - h * 0.18, width=w, height=h, mask="auto")
+    else:
+        c.setFont(font_info["name"], size_pt)
+        if align == "left":
+            c.drawString(left_x, baseline_y, text)
+        elif align == "right":
+            c.drawRightString(right_x, baseline_y, text)
+        else:
+            c.drawCentredString((left_x + right_x) / 2, baseline_y, text)
+
+
+_display_font_cmap_cache = {}
+
+# The brand display font (SHABOUR-SemiBold) is a stylized headline face with
+# a limited glyph set -- it covers A-Z/0-9/basic punctuation and accented
+# Latin letters, but is missing a few ordinary characters (no "+", no "°").
+# Rather than let those render as a missing-glyph tofu box when a whole
+# recipe card's body text is set in it, swap in a close, legible substitute
+# before rasterizing.
+_DISPLAY_FONT_SUBSTITUTIONS = {"+": "&", "°": " C"}
+
+
+def _get_display_font_cmap(font_path):
+    if font_path not in _display_font_cmap_cache:
+        try:
+            from fontTools.ttLib import TTFont as _FTFont
+            _display_font_cmap_cache[font_path] = set(_FTFont(font_path).getBestCmap().keys())
+        except Exception:
+            _display_font_cmap_cache[font_path] = None  # unknown -> don't sanitize
+    return _display_font_cmap_cache[font_path]
+
+
+def _sanitize_for_display_font(text, font_path):
+    cmap = _get_display_font_cmap(font_path)
+    if not cmap:
+        return text
+    out = []
+    for ch in text:
+        if ord(ch) in cmap:
+            out.append(ch)
+        elif ch in _DISPLAY_FONT_SUBSTITUTIONS:
+            out.append(_DISPLAY_FONT_SUBSTITUTIONS[ch])
+        # else: silently drop a character the font truly has no glyph for
+    return "".join(out)
+
+
+_display_font_cache = {}
+
+
+def _get_display_pil_font(font_path, size_pt):
+    """Cached PIL font object at a given point size, used for measuring
+    (not drawing) rasterized display-font text -- e.g. to word-wrap it
+    before calling _render_display_text() line by line."""
+    key = (font_path, size_pt)
+    if key not in _display_font_cache:
+        px_size = int(round(size_pt * RENDER_SCALE))
+        _display_font_cache[key] = ImageFont.truetype(font_path, px_size)
+    return _display_font_cache[key]
+
+
+def _display_text_width(text, font_path, size_pt):
+    text = _sanitize_for_display_font(text, font_path)
+    font = _get_display_pil_font(font_path, size_pt)
+    bbox = font.getbbox(text)
+    return (bbox[2] - bbox[0]) / RENDER_SCALE
+
+
+def _wrap_text_for_display_font(text, font_path, size_pt, max_width_pt):
+    """Word-wraps plain text (no bold markup) to fit max_width_pt, measuring
+    with the actual brand display font's metrics -- since SHABOUR's glyph
+    widths differ from any live font, reportlab's simpleSplit() can't be
+    used for it. Returns a list of line strings (never empty)."""
+    words = text.split()
+    if not words:
+        return [""]
+    lines = []
+    current = []
+    for word in words:
+        trial = " ".join(current + [word])
+        if current and _display_text_width(trial, font_path, size_pt) > max_width_pt:
+            lines.append(" ".join(current))
+            current = [word]
+        else:
+            current.append(word)
+    if current:
+        lines.append(" ".join(current))
+    return lines
+
+
 _divider_image_cache = {}
 
 
@@ -135,6 +278,27 @@ def _draw_wrapped_centered(c, text, center_x, top_y, max_width, font_name, size,
     y = top_y
     for line in lines:
         c.drawCentredString(center_x, y - size, line)
+        y -= leading
+    c.setFillColorRGB(0, 0, 0)
+    return y
+
+
+def _draw_wrapped_aligned(c, text, center_x, top_y, max_width, font_name, size, leading, color, align="center"):
+    """Like _draw_wrapped_centered(), but the alignment of each wrapped
+    line is a choice (left/center/right) instead of always centered --
+    used for the tasting-menu card's text, whose alignment is now
+    admin-editable."""
+    c.setFont(font_name, size)
+    c.setFillColorRGB(*_hex_to_rgb(color))
+    lines = simpleSplit(text, font_name, size, max_width)
+    y = top_y
+    for line in lines:
+        if align == "left":
+            c.drawString(center_x - max_width / 2, y - size, line)
+        elif align == "right":
+            c.drawRightString(center_x + max_width / 2, y - size, line)
+        else:
+            c.drawCentredString(center_x, y - size, line)
         y -= leading
     c.setFillColorRGB(0, 0, 0)
     return y
@@ -193,6 +357,7 @@ def render_card(c, origin_x, cfg, menu_data, body_font, origin_y=0, wine_font=No
     max_width = cw - 2 * cfg["margin_side"]
     bottom_limit = origin_y + cfg["margin_bottom"]
     display_font = cfg["fonts"]["display"]
+    align = cfg.get("alignment", {})
 
     y = origin_y + ch - cfg["margin_top"]
     overflowed = False
@@ -200,15 +365,17 @@ def render_card(c, origin_x, cfg, menu_data, body_font, origin_y=0, wine_font=No
     icon_path = cfg["divider_icon_path"]
     icon_height = cfg.get("divider_icon_height", 16)
 
-    y = _draw_display_centered(c, menu_data.get("title", ""), display_font, cfg["title_size"], center_x, y)
+    y = _draw_display_aligned(c, menu_data.get("title", ""), display_font, cfg["title_size"],
+                              center_x - max_width / 2, center_x + max_width / 2, y,
+                              align.get("title", "center"))
     y -= cfg["gap_after_title"]
 
     if menu_data.get("subtitle"):
         subtitle_size = cfg.get("subtitle_size", cfg.get("description_size", 10))
-        y = _draw_wrapped_centered(
+        y = _draw_wrapped_aligned(
             c, menu_data["subtitle"], center_x, y, max_width, body_font,
             subtitle_size, cfg.get("description_line_height", subtitle_size + 3),
-            cfg.get("subtitle_color", "#555555")
+            cfg.get("subtitle_color", "#555555"), align.get("subtitle", "center"),
         )
         y -= cfg.get("gap_after_subtitle", cfg["gap_after_title"])
 
@@ -227,24 +394,26 @@ def render_card(c, origin_x, cfg, menu_data, body_font, origin_y=0, wine_font=No
                 overflowed = True
                 return
             if name:
-                y = _draw_display_centered(c, name, display_font, cfg["course_name_size"], center_x, y)
+                y = _draw_display_aligned(c, name, display_font, cfg["course_name_size"],
+                                          center_x - max_width / 2, center_x + max_width / 2, y,
+                                          align.get("course_name", "center"))
                 y -= cfg["gap_name_to_desc"]
             if desc:
-                y = _draw_wrapped_centered(
+                y = _draw_wrapped_aligned(
                     c, desc, center_x, y, max_width, body_font,
                     cfg["description_size"], cfg["description_line_height"],
-                    cfg["description_color"]
+                    cfg["description_color"], align.get("description", "center"),
                 )
             # Wine-pairing menus carry an extra line per course naming the
             # wine served with it. Set slightly smaller and lighter than the
             # dish description so the two don't compete.
             if wine:
                 y -= cfg.get("gap_desc_to_wine", 4)
-                y = _draw_wrapped_centered(
+                y = _draw_wrapped_aligned(
                     c, wine, center_x, y, max_width, wine_font,
                     cfg.get("wine_size", cfg["description_size"] - 0.5),
                     cfg["description_line_height"],
-                    cfg.get("wine_color", "#6b5a45"),
+                    cfg.get("wine_color", "#6b5a45"), align.get("description", "center"),
                 )
             y -= cfg["gap_between_courses"]
 
@@ -691,10 +860,14 @@ class _CategorizedListFlow:
         if self.needs_showpage:
             self.c.showPage()
         cfg = self.cfg
-        center_x = self.page_w / 2
+        align = cfg.get("alignment", {})
         y = self.page_h - cfg["margin_top"]
         title = self.title_text + (" (suite)" if self.is_overflow else "")
-        y = _draw_display_centered(self.c, title, self.display_font_path, cfg["page_title_size"], center_x, y)
+        y = _draw_display_aligned(
+            self.c, title, self.display_font_path, cfg["page_title_size"],
+            self.margin_side, self.page_w - self.margin_side, y,
+            align.get("page_title", "center"),
+        )
         self.top_y = y - cfg["gap_after_page_title"]
         self.y = self.top_y
         self.column_index = 0
@@ -718,17 +891,25 @@ class _CategorizedListFlow:
 
     def draw_category(self, category):
         cfg = self.cfg
+        align = cfg.get("alignment", {})
+        # A category with a price note (e.g. "verre 10cl") assumes the name
+        # sits at the left with the note anchored to the right -- centering
+        # or right-aligning the name in that case would run the two
+        # together, so the note pins the name to "left" regardless of the
+        # configured alignment.
+        cat_align = "left" if category.get("note") else align.get("category", "left")
+
         self.ensure_space(cfg["category_size"] + cfg["gap_after_category"])
         self.y -= cfg["category_size"]
         cat_font = self.fonts["category"]
         self.c.setFillColorRGB(0.05, 0.05, 0.05)
-        if cat_font["raster"]:
-            # Brand display face -- drawn as an image, see _draw_display_left.
-            _draw_display_left(self.c, category.get("name", ""), cat_font["path"],
-                               cfg["category_size"], self.col_left, self.y)
-        else:
-            self.c.setFont(cat_font["name"], cfg["category_size"])
-            self.c.drawString(self.col_left, self.y, category.get("name", ""))
+        # Category headings render in caps regardless of how the name is
+        # typed in the editor (e.g. "champagne et effervescent" ->
+        # "CHAMPAGNE ET EFFERVESCENT") -- str.upper() handles the accented
+        # French letters correctly since this role is always live text,
+        # never the raster SHABOUR path.
+        _draw_role_text(self.c, category.get("name", "").upper(), cat_font, cfg["category_size"],
+                        self.col_left, self.col_right, self.y, cat_align)
 
         if category.get("note"):
             note_font = self.fonts["note"]
@@ -738,19 +919,23 @@ class _CategorizedListFlow:
         self.c.setFillColorRGB(0, 0, 0)
         self.y -= cfg["gap_after_category"]
 
-        for group in category.get("groups", []):
+        for group_idx, group in enumerate(category.get("groups", [])):
             if group.get("name"):
-                self.ensure_space(cfg["subgroup_size"] + cfg["gap_after_subgroup"])
+                # Breathing room ABOVE each subgroup label (separating it
+                # from the previous subgroup's last item), not just below it
+                # -- the label should sit close to its own wines, not float
+                # in the middle of a gap. Skipped for the very first
+                # subgroup in a category, since gap_after_category already
+                # provides that separation from the category header.
+                gap_before = cfg.get("gap_before_subgroup", 0) if group_idx > 0 else 0
+                self.ensure_space(gap_before + cfg["subgroup_size"] + cfg["gap_after_subgroup"])
+                self.y -= gap_before
                 self.y -= cfg["subgroup_size"]
                 sub_font = self.fonts["subgroup"]
-                if sub_font["raster"]:
-                    _draw_display_left(self.c, group["name"], sub_font["path"],
-                                       cfg["subgroup_size"], self.col_left, self.y)
-                else:
-                    self.c.setFont(sub_font["name"], cfg["subgroup_size"])
-                    self.c.setFillColorRGB(0.15, 0.15, 0.15)
-                    self.c.drawString(self.col_left, self.y, group["name"])
-                    self.c.setFillColorRGB(0, 0, 0)
+                self.c.setFillColorRGB(0.15, 0.15, 0.15)
+                _draw_role_text(self.c, group["name"], sub_font, cfg["subgroup_size"],
+                                self.col_left, self.col_right, self.y, align.get("subgroup", "left"))
+                self.c.setFillColorRGB(0, 0, 0)
                 self.y -= cfg["gap_after_subgroup"]
 
             for item in group.get("items", []):
@@ -799,6 +984,10 @@ def _resolve_role_fonts(cfg, base_dir, roles, fallback_key="body"):
     resolved = {}
     for role in roles:
         rel = fonts_cfg.get(role)
+        if rel in _STANDARD_PDF_FONTS:
+            # Bare standard-font name -- not a file, nothing to join/register.
+            resolved[role] = {"name": rel, "path": None, "raster": False}
+            continue
         path = os.path.join(base_dir, rel) if rel else fallback_path
         try:
             name = _register_body_font(path)
@@ -810,151 +999,101 @@ def _resolve_role_fonts(cfg, base_dir, roles, fallback_key="body"):
     return resolved
 
 
-_SCALABLE_KEYS = (
-    "category_size", "subgroup_size", "item_size", "note_size",
-    "gap_after_category", "gap_after_subgroup", "gap_after_item",
-    "gap_after_group_block",
-)
-# How far we'll shrink text/spacing across the whole document before giving
-# up and letting an exceptionally long page spill onto its own "(suite)"
-# continuation page instead. Kept fairly close to 1.0 -- since the shrink
-# scale is now shared by every page (see generate_categorized_list_pdf), a
-# low floor here would let one unusually long page (e.g. a big region list)
-# drag every other page's text down to a barely-legible size along with it.
-_MIN_SHRINK_SCALE = 0.85
+# Numeric fields a single page is allowed to override via
+# page["layout_overrides"] (see generate_categorized_list_pdf) -- sizes and
+# gaps only. Page dimensions/margins stay document-wide on purpose: those
+# affect print alignment across the whole booklet, so letting one page
+# drift there would misalign the physical pages when printed/cut. This is
+# the escape hatch for "this one page runs long/short at the shared size"
+# without anyone needing to touch every other page.
+_PAGE_OVERRIDABLE_KEYS = {
+    "page_title_size", "category_size", "subgroup_size", "item_size", "note_size",
+    "gap_after_page_title", "gap_after_category", "gap_before_subgroup",
+    "gap_after_subgroup", "gap_after_item", "gap_after_group_block",
+}
+
+# Font roles a single page is allowed to override via
+# page["layout_overrides"]["fonts"]. Unlike the numeric keys above, this
+# exists specifically because the winelist's category/subgroup roles carry
+# different real-world meaning on different pages -- on the "Vins au
+# Verre" overview page, category=wine style (Champagne/Blanc/Rose/Rouge)
+# and subgroup=country, but on every other page category=country and
+# subgroup=sub-region. The two page types need opposite fonts on those two
+# roles, so the font can't just be a single document-wide setting.
+_PAGE_OVERRIDABLE_FONT_ROLES = {"category", "subgroup", "item", "note"}
 
 
-def _measure_categories_height(categories, cfg):
-    """Dry-run of the same vertical decrements draw_category() makes, so we
-    can tell -- before drawing anything -- whether a logical page's content
-    fits in the space available, without needing a new PDF page for it."""
-    h = 0.0
-    for category in categories:
-        h += cfg["category_size"] + cfg["gap_after_category"]
-        for group in category.get("groups", []):
-            if group.get("name"):
-                h += cfg["subgroup_size"] + cfg["gap_after_subgroup"]
-            for item in group.get("items", []):
-                if not (item.get("text") or "").strip():
-                    continue
-                h += cfg["item_size"] + cfg["gap_after_item"]
-        h += cfg["gap_after_group_block"]
-    return h
-
-
-def _page_available_height(cfg, title_text, display_font_path):
-    """Usable vertical space for one column of content on one printed page,
-    below the title. Shared by _page_fit_scale and the column-count decision
-    in generate_categorized_list_pdf so both agree on the same number."""
-    title_h = 0.0
-    if title_text and title_text.strip():
-        _, _, title_h = _render_display_text(title_text, display_font_path, cfg["page_title_size"])
-    return (cfg["page_height"] - cfg["margin_top"] - cfg["margin_bottom"]
-            - title_h - cfg["gap_after_page_title"])
-
-
-def _page_fit_scale(categories, cfg, title_text, display_font_path, n_columns=1):
-    """How much this one logical page's text/spacing would need to shrink
-    (1.0 = no shrink) to keep its content on a single printed page, laid
-    out across n_columns side-by-side columns (1 = the normal single-column
-    layout).
-
-    The title is a rasterised display-font image, not a plain text line --
-    its real inked height (with accents/descenders) can run noticeably
-    taller than page_title_size, so it's measured directly rather than
-    assumed, or the fit estimate would under-count used space and still
-    let borderline pages overflow.
-    """
-    available = _page_available_height(cfg, title_text, display_font_path) * max(1, n_columns)
-    needed = _measure_categories_height(categories, cfg)
-    if needed <= available or needed <= 0:
-        return 1.0
-    return available / needed
-
-
-def _fit_cfg_to_scale(cfg, scale):
-    if scale >= 1.0:
+def _page_effective_cfg(cfg, page):
+    """Shallow-merges a page's optional layout_overrides on top of the
+    document-wide cfg: numeric size/gap keys (_PAGE_OVERRIDABLE_KEYS) and,
+    separately, a "fonts" sub-dict for role font paths
+    (_PAGE_OVERRIDABLE_FONT_ROLES). Unknown keys are ignored (defensive
+    against stray/typo'd keys reaching reportlab). Returns cfg unchanged
+    (no copy) if the page has no overrides, so the common case stays
+    cheap."""
+    overrides = page.get("layout_overrides")
+    if not overrides:
         return cfg
-    scaled_cfg = dict(cfg)
-    for key in _SCALABLE_KEYS:
-        scaled_cfg[key] = cfg[key] * scale
-    return scaled_cfg
+    clean = {k: v for k, v in overrides.items() if k in _PAGE_OVERRIDABLE_KEYS and v is not None}
+    font_overrides = overrides.get("fonts") or {}
+    clean_fonts = {k: v for k, v in font_overrides.items() if k in _PAGE_OVERRIDABLE_FONT_ROLES and v}
+    if not clean and not clean_fonts:
+        return cfg
+    page_cfg = dict(cfg)
+    page_cfg.update(clean)
+    if clean_fonts:
+        page_cfg["fonts"] = {**cfg.get("fonts", {}), **clean_fonts}
+    return page_cfg
 
 
 def generate_categorized_list_pdf(content, cfg, output_path, base_dir):
     """
     content: dict with "pages": [{title, categories: [{name, note?, groups:
-             [{name?, items: [{text, price}]}]}]}]
+             [{name?, items: [{text, price}]}]}], layout_overrides?: {...}}]
     cfg: dict loaded from config/templates/<template>.json
     output_path: where to write the final PDF
     base_dir: app root, so font paths in cfg (relative) resolve correctly
 
     Returns: {"ok": bool, "warnings": [str, ...]}
+
+    Every page uses the SAME font sizes and spacing from cfg by default --
+    no automatic per-page shrinking. A page whose content doesn't fit
+    spills onto an automatic "(suite)" continuation page instead (see
+    ensure_space/_new_page on _CategorizedListFlow), so the list stays
+    legible and visually consistent even if that means one section runs
+    long. If a specific page needs different sizing (e.g. it's the one
+    page that overflows, or its content is short and could run larger),
+    it can set its own "layout_overrides" dict with any of
+    _PAGE_OVERRIDABLE_KEYS -- only that page is affected. A page can also
+    override which font file backs the category/subgroup/item/note roles
+    via layout_overrides["fonts"] (see _PAGE_OVERRIDABLE_FONT_ROLES) --
+    needed because those two roles mean different things on different
+    pages (wine style vs. country vs. sub-region) and so need different
+    fonts depending on the page.
     """
     display_font_path = os.path.join(base_dir, cfg["fonts"]["display"])
-
     c = canvas.Canvas(output_path, pagesize=(cfg["page_width"], cfg["page_height"]))
-
     pages = content.get("pages", [])
-
-    # Like the original InDesign file, each logical page should stay one
-    # printed page, single column, matching the source document's design --
-    # so instead of ever spilling onto a "(suite)" page when edits make a
-    # section run long, a page that doesn't fit shrinks (its own text and
-    # spacing, not the whole document's) just enough to still fit on its
-    # own single page.
-    #
-    # Most pages share ONE scale (the tightest-fitting page *among the ones
-    # that fit within _MIN_SHRINK_SCALE* sets it) so the bulk of the
-    # document prints at a consistent, legible size instead of each page
-    # shrinking independently. A handful of exceptionally dense pages won't
-    # fit even at that floor -- rather than dragging every other page's
-    # font down to match them (the earlier "font too small" regression) or
-    # letting them spill onto an extra page, those specific pages alone
-    # shrink further, exactly as much as they individually need.
-    #
-    # available_1col and needed (at unscaled cfg sizes) are cached per page
-    # here rather than recomputed later -- the title height component of
-    # available_1col comes from _render_display_text, which rasterises the
-    # title with Pillow and is too slow to call several times per page.
-    # page_title_size isn't in _SCALABLE_KEYS, so available_1col is the same
-    # at any shrink scale and this single measurement can be reused below.
-    worst_scale = 1.0
-    page_metrics = []
-    for page in pages:
-        categories, title = page.get("categories", []), page.get("title", "")
-        available_1col = _page_available_height(cfg, title, display_font_path)
-        needed = _measure_categories_height(categories, cfg)
-        page_metrics.append((available_1col, needed))
-        page_scale = 1.0 if needed <= available_1col or needed <= 0 else available_1col / needed
-        if page_scale >= _MIN_SHRINK_SCALE:
-            # Only pages that fit within the normal floor influence the
-            # shared baseline -- an exceptionally dense page gets handled
-            # on its own below instead of dragging this down further.
-            worst_scale = min(worst_scale, page_scale)
-    shared_scale = max(_MIN_SHRINK_SCALE, worst_scale)
-    shared_cfg = _fit_cfg_to_scale(cfg, shared_scale)
-    role_fonts = _resolve_role_fonts(shared_cfg, base_dir, ("category", "subgroup", "item", "note"))
+    # Resolved once per distinct fonts-dict (not once globally), since a
+    # page's layout_overrides["fonts"] can point roles at different files
+    # than the document default -- cheap to redo, and _register_body_font
+    # is itself idempotent per font file.
+    role_fonts_cache = {}
 
     any_overflow = False
-    extra_shrunk_titles = []
     for i, page in enumerate(pages):
         categories = page.get("categories", [])
         title = page.get("title", "")
-        available_1col, needed_at_scale1 = page_metrics[i]
-
-        page_cfg = shared_cfg
-        if needed_at_scale1 > 0 and needed_at_scale1 * shared_scale > available_1col:
-            # Still doesn't fit at the shared scale -- shrink just this
-            # page further (below the shared floor if it has to) so it
-            # stays on one page instead of spilling onto a "(suite)" page.
-            page_scale = available_1col / needed_at_scale1
-            page_cfg = _fit_cfg_to_scale(cfg, page_scale)
-            extra_shrunk_titles.append(title)
-
+        page_cfg = _page_effective_cfg(cfg, page)
+        fonts_key = tuple(sorted(page_cfg.get("fonts", {}).items()))
+        if fonts_key not in role_fonts_cache:
+            role_fonts_cache[fonts_key] = _resolve_role_fonts(
+                page_cfg, base_dir, ("category", "subgroup", "item", "note")
+            )
+        role_fonts = role_fonts_cache[fonts_key]
         flow = _CategorizedListFlow(
             c, page_cfg, role_fonts, display_font_path, title,
-            already_started=(i > 0), n_columns=1,
+            already_started=(i > 0),
         )
         for category in categories:
             flow.draw_category(category)
@@ -966,13 +1105,427 @@ def generate_categorized_list_pdf(content, cfg, output_path, base_dir):
     warnings = []
     if any_overflow:
         warnings.append(
-            "Even shrunk further, one or more sections still ran onto an "
-            "extra page -- consider trimming the list for that page."
+            "One or more sections were too long to fit on a single page at "
+            "this font size, so they continue onto a '(suite)' page -- "
+            "shorten the list or lower the font size in Layout settings if "
+            "you'd rather it stayed on one page."
         )
-    elif extra_shrunk_titles:
+
+    return {"ok": True, "warnings": warnings, "path": output_path}
+
+
+# ---------------------------------------------------------------------------
+# Recipe cards (e.g. "Shabour x Licoük" collab cards): a landscape card with
+# a rotated brand/title "spine" on the left, an ingredient table, and a
+# bulleted method -- repeated several times on one A4 sheet with crop marks,
+# so the kitchen can cut out one card per copy.
+# ---------------------------------------------------------------------------
+
+def _parse_bold_segments(text):
+    """Splits text on **bold** markers into [(chunk, is_bold), ...]. Lets a
+    non-technical editor mark a word bold (e.g. a temperature or a time)
+    without any rich-text UI -- they just wrap it in ** in the plain text
+    field, same convention as Markdown."""
+    parts = re.split(r"\*\*(.+?)\*\*", text)
+    return [(part, i % 2 == 1) for i, part in enumerate(parts) if part]
+
+
+def _wrap_bold_segments(c, segments, regular_font, bold_font, size, max_width):
+    """Greedy word-wrap across mixed regular/bold runs. Returns a list of
+    lines, each a list of (token, is_bold) -- tokens include the spaces
+    between words so drawing them back-to-back reproduces normal spacing."""
+    tokens = []
+    for text, is_bold in segments:
+        for tok in re.split(r"(\s+)", text):
+            if tok:
+                tokens.append((tok, is_bold))
+
+    def token_w(tok, is_bold):
+        return c.stringWidth(tok, bold_font if is_bold else regular_font, size)
+
+    def rstrip_line(line):
+        while line and line[-1][0].isspace():
+            line.pop()
+        return line
+
+    lines = []
+    current = []
+    current_w = 0.0
+    for tok, is_bold in tokens:
+        w = token_w(tok, is_bold)
+        if tok.isspace():
+            if current:
+                current.append((tok, is_bold))
+                current_w += w
+            continue
+        if current_w + w > max_width and current:
+            lines.append(rstrip_line(current))
+            current, current_w = [], 0.0
+        current.append((tok, is_bold))
+        current_w += w
+    if current:
+        lines.append(rstrip_line(current))
+    return lines or [[]]
+
+
+def _draw_bold_wrapped_line(c, line, x, y, regular_font, bold_font, size):
+    cx = x
+    for tok, is_bold in line:
+        font = bold_font if is_bold else regular_font
+        c.setFont(font, size)
+        c.drawString(cx, y, tok)
+        cx += c.stringWidth(tok, font, size)
+
+
+def _draw_rotated90(c, x, y, draw_fn):
+    """Runs draw_fn(c) with the canvas origin moved to (x, y) and rotated
+    90 degrees counter-clockwise, so draw_fn can draw normally starting at
+    (0, 0) -- what it draws going "right" ends up running bottom-to-top at
+    (x, y) on the real page. Used for the recipe card's vertical spine."""
+    c.saveState()
+    c.translate(x, y)
+    c.rotate(90)
+    draw_fn(c)
+    c.restoreState()
+
+
+def _draw_recipe_card(c, x_left, x_right, y_bottom, y_top, cfg, data, fonts, icon_reader_wh):
+    """Draws one recipe card in the given box. Returns True if the
+    ingredient list or method overflowed the card.
+
+    Everything on the card -- byline, title, ingredients, method, footer --
+    reads in ONE consistent direction: rotated 90 degrees bottom-to-top,
+    same as the brand title. Rather than hand-deriving rotated coordinates
+    per element, the whole card is authored in plain top-to-bottom /
+    left-to-right "local" coordinates (exactly like any other normal page
+    in this file) inside a single saveState/translate/rotate block -- see
+    _draw_rotated90. Reportlab applies that rotation to every drawString /
+    drawImage call automatically, so the local code below reads just like
+    the rest of this module's layout functions:
+      - local "a" (the x-argument) is the reading direction -> ends up
+        running bottom-to-top on the printed card (0 = card bottom,
+        content_h = card top).
+      - local "b" (the y-argument, always <= 0 here) is depth into the
+        card, spine -> title -> ingredients -> method (0 = left/spine
+        edge, -content_w = right/method edge).
+    """
+    content_top = y_top - cfg["card_margin_top"]
+    content_bottom = y_bottom + cfg["card_margin_bottom"]
+    content_h = content_top - content_bottom
+    content_w = x_right - x_left
+    overflowed = False
+
+    name_font = fonts["body"]["name"]
+    bold_font = fonts["bold"]["name"]
+    footer_font = fonts["footer"]["name"]
+    display_font_path = fonts["display_path"]
+
+    collab = (data.get("collab") or "").strip()
+    title_text = (data.get("title") or "").strip()
+    footer = (data.get("footer") or "").strip()
+
+    title_img, title_w, title_h = (None, 0.0, 0.0)
+    if title_text:
+        title_img, title_w, title_h = _render_display_text(title_text, display_font_path, cfg["title_size"])
+
+    icon_reader, icon_px_w, icon_px_h = icon_reader_wh
+    icon_thick = cfg.get("spine_icon_height", 7)
+    icon_len = icon_thick * (icon_px_w / icon_px_h)
+
+    label_text = "INGREDIENTS:"
+    label_size = cfg["ingredients_label_size"]
+
+    overflow_flag = {"v": False}
+
+    def draw_fn(cc):
+        # --- byline, centered in the spine band ---
+        collab_b = -(cfg["spine_width"] / 2.0)
+        if collab:
+            size = cfg["collab_size"]
+            cc.setFont(bold_font, size)
+            text_len = cc.stringWidth(collab, bold_font, size)
+            a0 = (content_h - text_len) / 2.0
+            cc.drawString(a0, collab_b - size * 0.32, collab)
+
+        # rule between spine and title column
+        rule_b = -cfg["spine_width"]
+        cc.setStrokeColorRGB(0.15, 0.15, 0.15)
+        cc.setLineWidth(0.75)
+        cc.line(0, rule_b, content_h, rule_b)
+        cc.setStrokeColorRGB(0, 0, 0)
+        cc.setLineWidth(1)
+
+        # --- title column: LEMON TART (raster) + icon + "INGREDIENTS:" ---
+        label_len = cc.stringWidth(label_text, bold_font, label_size)
+        total_len = title_w + cfg["gap_title_to_icon"] + icon_len + cfg["gap_icon_to_label"] + label_len
+        title_col_b = -(cfg["spine_width"] + cfg["gap_after_spine"] + cfg["title_col_width"] / 2.0)
+        a = (content_h - total_len) / 2.0
+
+        if title_img is not None:
+            cc.drawImage(title_img, a, title_col_b - title_h / 2.0, width=title_w, height=title_h, mask="auto")
+            a += title_w + cfg["gap_title_to_icon"]
+
+        cc.drawImage(icon_reader, a, title_col_b - icon_thick / 2.0, width=icon_len, height=icon_thick, mask="auto")
+        a += icon_len + cfg["gap_icon_to_label"]
+
+        cc.setFont(bold_font, label_size)
+        cc.drawString(a, title_col_b - label_size * 0.32, label_text)
+
+        # --- ingredients: name then right-aligned qty, same "line" each ---
+        ing_size = cfg["ingredient_size"]
+        b = -(cfg["spine_width"] + cfg["gap_after_spine"] + cfg["title_col_width"] + cfg["gap_after_title_col"])
+        for ing in data.get("ingredients", []):
+            name = (ing.get("name") or "").strip()
+            qty = (ing.get("qty") or "").strip()
+            if not name and not qty:
+                continue
+            b -= ing_size
+            if -b > content_w:
+                overflow_flag["v"] = True
+                break
+            cc.setFont(name_font, ing_size)
+            cc.drawString(0, b, name)
+            cc.setFont(bold_font, ing_size)
+            cc.drawRightString(content_h, b, qty)
+            b -= cfg["ingredient_row_gap"]
+
+        # --- method: bulleted, wrapped, with inline **bold** support ---
+        method_size = cfg["method_size"]
+        line_h = cfg["method_line_height"]
+        bullet_indent = cfg["method_bullet_indent"]
+        max_width = content_h - bullet_indent
+        b = -(cfg["spine_width"] + cfg["gap_after_spine"] + cfg["title_col_width"] + cfg["gap_after_title_col"]
+              + cfg["ingredients_col_width"] + cfg["gap_after_ingredients"])
+        for step in data.get("method", []):
+            step = (step or "").strip()
+            if not step:
+                continue
+            segments = _parse_bold_segments(step)
+            lines = _wrap_bold_segments(cc, segments, name_font, bold_font, method_size, max_width)
+            b -= method_size
+            if -b > content_w:
+                overflow_flag["v"] = True
+                break
+            cc.setFont(name_font, method_size)
+            cc.drawString(0, b, "•")
+            _draw_bold_wrapped_line(cc, lines[0], bullet_indent, b, name_font, bold_font, method_size)
+            for line in lines[1:]:
+                b -= line_h
+                if -b > content_w:
+                    overflow_flag["v"] = True
+                    break
+                _draw_bold_wrapped_line(cc, line, bullet_indent, b, name_font, bold_font, method_size)
+            b -= cfg["method_gap"]
+
+        # --- footer: small brand/address line, near the far/deep edge ---
+        if footer:
+            cc.setFont(footer_font, cfg["footer_size"])
+            cc.setFillColorRGB(0.55, 0.55, 0.55)
+            cc.drawRightString(content_h, -(content_w - 3), footer)
+            cc.setFillColorRGB(0, 0, 0)
+
+    _draw_rotated90(c, x_left, content_bottom, draw_fn)
+    return overflow_flag["v"]
+
+
+def generate_recipe_card_pdf(menu_data, cfg, output_path, base_dir):
+    """
+    menu_data: dict with collab/title/ingredients/method/footer (see
+    sample_data/recipe_card).
+    cfg: dict loaded from config/templates/<template>.json
+    base_dir: app root, so font/icon paths in cfg (relative) resolve
+
+    Repeats the same card cfg["cards_per_sheet"] times (default 3) stacked
+    on one A4 sheet, matching the reference "Shabour x Licoük" print file --
+    the kitchen cuts the sheet into identical cards.
+    """
+    fonts = {
+        "display_path": os.path.join(base_dir, cfg["fonts"]["display"]),
+        "body": {},
+        "bold": {},
+        "footer": {},
+    }
+    body_path = os.path.join(base_dir, cfg["fonts"]["body"])
+    bold_path = os.path.join(base_dir, cfg["fonts"].get("bold", cfg["fonts"]["body"]))
+    footer_path = os.path.join(base_dir, cfg["fonts"].get("footer", cfg["fonts"]["body"]))
+    fonts["body"]["name"] = _register_body_font(body_path)
+    fonts["bold"]["name"] = _register_body_font(bold_path)
+    fonts["footer"]["name"] = _register_body_font(footer_path)
+
+    icon_path = os.path.join(base_dir, cfg.get("spine_icon", "assets/icons/shabour_symbol.png"))
+    icon_reader_wh = _get_divider_image(icon_path)
+
+    page_w, page_h = cfg["page_width"], cfg["page_height"]
+    cards_per_sheet = max(1, int(cfg.get("cards_per_sheet", 3)))
+    card_h = page_h / cards_per_sheet
+    x_left = cfg["margin_side"]
+    x_right = page_w - cfg["margin_side"]
+
+    c = canvas.Canvas(output_path, pagesize=(page_w, page_h))
+
+    any_overflow = False
+    for i in range(cards_per_sheet):
+        y_top = page_h - i * card_h
+        y_bottom = y_top - card_h
+        overflowed = _draw_recipe_card(c, x_left, x_right, y_bottom, y_top, cfg, menu_data, fonts, icon_reader_wh)
+        any_overflow = any_overflow or overflowed
+        if cfg.get("crop_marks", True):
+            _draw_crop_marks(c, x_left, y_bottom, x_right - x_left, card_h, page_w)
+
+    c.showPage()
+    c.save()
+
+    warnings = []
+    if any_overflow:
         warnings.append(
-            "These pages use a smaller font than the rest of the list so "
-            "they still fit on one page: " + ", ".join(extra_shrunk_titles)
+            "The ingredient list or method is too long for the card -- "
+            "shorten it before printing."
+        )
+
+    return {"ok": True, "warnings": warnings, "path": output_path}
+
+
+# ---------------------------------------------------------------------------
+# Simple family-recipe cards (e.g. "La Challah Shabour", "Tahini Cookies"):
+# a centered title, an "INGREDIENTS:" subtitle + list, and wrapped method
+# paragraphs. The title is set in the brand display font (SHABOUR-SemiBold,
+# rasterized -- it has PostScript outlines reportlab can't embed as live
+# text), matching every other template's title treatment. The "INGREDIENTS:"
+# subtitle and all body copy (ingredient lines, method) use a separate,
+# plain readable Avenir weight -- drawn as ordinary live vector text --
+# since a stylized display face isn't meant for paragraphs of body copy.
+# Printed two-up on one landscape sheet, same physical layout as the
+# tasting-menu cards (see render_card/generate_pdf above).
+# ---------------------------------------------------------------------------
+
+def _draw_simple_recipe_card(c, origin_x, cfg, data, display_font, subtitle_font, body_font, origin_y=0):
+    """Draws one simple recipe card at the given sheet offset. Returns
+    (overflowed, end_y) -- end_y lets the caller vertically re-center the
+    block, same convention as render_card() above."""
+    cw = cfg["card_width"]
+    ch = cfg["card_height"]
+    center_x = origin_x + cw / 2
+    left_x = origin_x + cfg["margin_side"]
+    right_x = origin_x + cw - cfg["margin_side"]
+    max_width = right_x - left_x
+    bottom_limit = origin_y + cfg["margin_bottom"]
+    overflowed = False
+
+    y = origin_y + ch - cfg["margin_top"]
+
+    title = (data.get("title") or "").strip()
+    if title:
+        y = _draw_display_centered(c, title, display_font, cfg["title_size"], center_x, y)
+    y -= cfg["gap_after_title"]
+
+    ingredients = [ing for ing in data.get("ingredients", [])
+                   if (ing.get("name") or "").strip() or (ing.get("qty") or "").strip()]
+    if ingredients:
+        label_size = cfg["ingredients_label_size"]
+        y -= label_size
+        if y < bottom_limit:
+            overflowed = True
+        else:
+            c.setFont(subtitle_font, label_size)
+            c.drawString(left_x, y, "INGREDIENTS:")
+        y -= cfg["gap_after_ingredients_label"]
+
+        ing_size = cfg["ingredient_size"]
+        c.setFont(body_font, ing_size)
+        for ing in ingredients:
+            if overflowed:
+                break
+            name = (ing.get("name") or "").strip()
+            qty = (ing.get("qty") or "").strip()
+            line = f"{name} : {qty}" if name and qty else (name or qty)
+            y -= ing_size
+            if y < bottom_limit:
+                overflowed = True
+                break
+            c.drawString(left_x, y, line)
+            y -= cfg["gap_after_ingredient"]
+        y -= cfg["gap_after_ingredients_block"]
+
+    method_size = cfg["method_size"]
+    line_h = cfg["method_line_height"]
+    for step in data.get("method", []):
+        if overflowed:
+            break
+        step = (step or "").strip()
+        if not step:
+            continue
+        segments = _parse_bold_segments(step)
+        lines = _wrap_bold_segments(c, segments, body_font, subtitle_font, method_size, max_width)
+        y -= method_size
+        if y < bottom_limit:
+            overflowed = True
+            break
+        _draw_bold_wrapped_line(c, lines[0], left_x, y, body_font, subtitle_font, method_size)
+        for line in lines[1:]:
+            y -= line_h
+            if y < bottom_limit:
+                overflowed = True
+                break
+            _draw_bold_wrapped_line(c, line, left_x, y, body_font, subtitle_font, method_size)
+        y -= cfg["gap_after_method_step"]
+
+    if y < bottom_limit:
+        overflowed = True
+
+    return overflowed, y
+
+
+def generate_simple_recipe_card_pdf(menu_data, cfg, output_path, base_dir):
+    """
+    menu_data: dict with title/ingredients/method (see sample_data/challah,
+    sample_data/tahini_cookies).
+    cfg: dict loaded from config/templates/simple_recipe_card.json
+    base_dir: app root, so font paths in cfg (relative) resolve
+
+    Two identical cards side by side on one landscape sheet, matching the
+    reference InDesign files -- the kitchen cuts the sheet in half.
+    """
+    display_font = os.path.join(base_dir, cfg["fonts"]["display"])
+    subtitle_path = os.path.join(base_dir, cfg["fonts"]["subtitle"])
+    body_path = os.path.join(base_dir, cfg["fonts"]["body"])
+    subtitle_font = _register_body_font(subtitle_path)
+    body_font = _register_body_font(body_path)
+
+    card_w, card_h = cfg["card_width"], cfg["card_height"]
+    sheet_w = cfg.get("sheet_width", card_w * 2)
+    sheet_h = cfg.get("sheet_height", card_h)
+
+    block_w = card_w * 2
+    offset_x = (sheet_w - block_w) / 2.0
+    offset_y = (sheet_h - card_h) / 2.0
+
+    # Recipes vary in length, so vertically re-center the block the same
+    # way the tasting-menu cards do (see generate_pdf above) rather than
+    # leaving a short recipe stranded at the top of the card.
+    probe = canvas.Canvas(io.BytesIO(), pagesize=(sheet_w, sheet_h))
+    _, end_y = _draw_simple_recipe_card(probe, offset_x, cfg, menu_data, display_font, subtitle_font, body_font, offset_y)
+    content_top = offset_y + card_h - cfg["margin_top"]
+    used = content_top - end_y
+    slack = (card_h - cfg["margin_top"] - cfg["margin_bottom"]) - used
+    if slack > 0:
+        offset_y -= slack / 2.0
+
+    c = canvas.Canvas(output_path, pagesize=(sheet_w, sheet_h))
+
+    overflow_1, _ = _draw_simple_recipe_card(c, offset_x, cfg, menu_data, display_font, subtitle_font, body_font, offset_y)
+    overflow_2, _ = _draw_simple_recipe_card(c, offset_x + card_w, cfg, menu_data, display_font, subtitle_font, body_font, offset_y)
+
+    if cfg.get("crop_marks", True):
+        _draw_crop_marks(c, offset_x, offset_y, block_w, card_h, sheet_w, mid_mark=True)
+
+    c.showPage()
+    c.save()
+
+    warnings = []
+    if overflow_1 or overflow_2:
+        warnings.append(
+            "The ingredient list or method is too long for the card -- "
+            "shorten it before printing."
         )
 
     return {"ok": True, "warnings": warnings, "path": output_path}

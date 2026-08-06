@@ -21,17 +21,19 @@
     },
     {
       "description": "aged cod, fried chickpeas, girolles, parsley, shifka water",
-      "name": "PATRIYOTE"
+      "name": "PATRIYOTE",
+      "wine": "Knoll \u00abLoibenberg Gruner Veltiner Smaragd\u00bb 2020, Wachau, Austria"
     },
     {
       "description": "Sweetbread, zucchini flower, confit garlic, mustard leaves, veal vinaigrette",
-      "name": "ris d'orloff"
+      "name": "ris d'orloff",
+      "wine": "Kirrenbourg \u00abCuvee Matthieu\u00bb 2022, Alsace, France"
     }
   ],
   "dessert": [
     {
-      "description": "fried freekeh, baharat cake, black pepper-cinnamon cream, lime sorbet",
-      "name": "EASY PEASY LEMOn FREEKEH"
+      "description": "vine-leaf oil, grapes, Puffed rice, ayran ice cream",
+      "name": "GEFEn"
     }
   ],
   "title": "THE VOYAGE SHABOUR"

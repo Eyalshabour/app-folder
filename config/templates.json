@@ -50,6 +50,31 @@
       ]
     },
     {
+      "id": "recipe_card",
+      "name": "Recipe Card (collab, e.g. Shabour x Licoük)",
+      "layout_config": "config/templates/recipe_card.json",
+      "languages": [
+        "en"
+      ]
+    },
+    {
+      "id": "challah",
+      "name": "Recipe Card - La Challah Shabour",
+      "layout_config": "config/templates/simple_recipe_card.json",
+      "languages": [
+        "fr",
+        "en"
+      ]
+    },
+    {
+      "id": "tahini_cookies",
+      "name": "Recipe Card - Tahini Cookies",
+      "layout_config": "config/templates/simple_recipe_card.json",
+      "languages": [
+        "en"
+      ]
+    },
+    {
       "id": "6_kosher_temps_voyagette",
       "name": "VOYAGETTE KOSHER 6 TEMPS (Lunch)",
       "layout_config": "config/templates/voyage_shabour.json",

@@ -7,6 +7,7 @@ const lineItemTpl = document.getElementById("line-item-template");
 const spacerRowTpl = document.getElementById("spacer-row-template");
 const headingRowTpl = document.getElementById("heading-row-template");
 const saveBtn = document.getElementById("save-btn");
+const saveBtnLabel = saveBtn.querySelector(".save-btn-label");
 const saveStatus = document.getElementById("save-status");
 const templateSelect = document.getElementById("template-select");
 const langTabs = document.getElementById("lang-tabs");
@@ -22,6 +23,9 @@ const adminFields = document.getElementById("admin-fields");
 const adminSaveBtn = document.getElementById("admin-save-btn");
 const adminPreviewBtn = document.getElementById("admin-preview-btn");
 const adminStatus = document.getElementById("admin-status");
+
+const railBtns = document.querySelectorAll(".rail-btn");
+const dockPanels = document.querySelectorAll(".dock-panel");
 
 // Human-friendly labels for the layout fields the admin panel can edit.
 // Anything not listed here just gets its raw key name, title-cased.
@@ -50,7 +54,19 @@ const ADMIN_FIELD_LABELS = {
   gap_after_top_icon: "Gap after top icon",
   gap_after_mid_icon: "Gap after middle icon",
   gap_before_bottom_icon: "Gap before bottom icon",
+  gap_before_subgroup: "Gap before sub-group heading",
 };
+
+// Fields a single categorized-list page (Wine List, Digestifs) can
+// override on its own, independent of the document-wide Layout settings
+// -- e.g. if just the Vins Rouges France page runs long, its own item
+// size/gaps can come down a notch without touching every other page.
+// Must match pdf_generator.py's _PAGE_OVERRIDABLE_KEYS.
+const PAGE_OVERRIDABLE_KEYS = [
+  "page_title_size", "category_size", "subgroup_size", "item_size", "note_size",
+  "gap_after_page_title", "gap_after_category", "gap_before_subgroup",
+  "gap_after_subgroup", "gap_after_item", "gap_after_group_block",
+];
 
 function adminFieldLabel(key) {
   return ADMIN_FIELD_LABELS[key] || key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
@@ -116,9 +132,153 @@ function renderMenu() {
     renderCourseMenu();
   } else if ("pages" in menuState) {
     renderCategorizedListMenu();
+  } else if ("ingredients" in menuState && "collab" in menuState) {
+    renderRecipeCardMenu();
+  } else if ("ingredients" in menuState) {
+    renderSimpleRecipeCardMenu();
   } else {
     renderPriceCardMenu();
   }
+}
+
+// ---------------------------------------------------------------------
+// Simple family-recipe cards (e.g. "La Challah Shabour", "Tahini
+// Cookies"): just a title, an ingredient table, and a plain method --
+// reuses the same ingredient/method editors as the collab recipe cards.
+// ---------------------------------------------------------------------
+
+function renderSimpleRecipeCardMenu() {
+  const node = simpleFieldTpl.content.cloneNode(true);
+  const input = node.querySelector(".simple-field-input");
+  node.querySelector(".simple-field-label").textContent = "Recipe Title";
+  input.value = menuState.title || "";
+  input.placeholder = "Recipe Title";
+  input.addEventListener("input", () => { menuState.title = input.value; });
+  root.appendChild(node);
+
+  root.appendChild(buildIngredientsGroup());
+  root.appendChild(buildMethodGroup());
+}
+
+// ---------------------------------------------------------------------
+// Recipe cards (e.g. "Shabour x Licoük" collab cards): collab byline,
+// title, an ingredient table (name + qty), and a bulleted method.
+// ---------------------------------------------------------------------
+
+function renderRecipeCardMenu() {
+  [
+    { key: "collab", label: "Collab / Byline (e.g. SHABOUR X LICOÜK)" },
+    { key: "title", label: "Recipe Title" },
+  ].forEach(({ key, label }) => {
+    const node = simpleFieldTpl.content.cloneNode(true);
+    const input = node.querySelector(".simple-field-input");
+    node.querySelector(".simple-field-label").textContent = label;
+    input.value = menuState[key] || "";
+    input.placeholder = label;
+    input.addEventListener("input", () => { menuState[key] = input.value; });
+    root.appendChild(node);
+  });
+
+  root.appendChild(buildIngredientsGroup());
+  root.appendChild(buildMethodGroup());
+
+  const footerNode = simpleFieldTpl.content.cloneNode(true);
+  const footerInput = footerNode.querySelector(".simple-field-input");
+  footerNode.querySelector(".simple-field-label").textContent = "Footer (small print)";
+  footerInput.value = menuState.footer || "";
+  footerInput.placeholder = "e.g. SHABOUR — 19 RUE SAINT-SAUVEUR, 75002 PARIS";
+  footerInput.addEventListener("input", () => { menuState.footer = footerInput.value; });
+  root.appendChild(footerNode);
+}
+
+function buildIngredientsGroup() {
+  const node = groupTpl.content.cloneNode(true);
+  node.querySelector(".group-heading").textContent = "Ingredients";
+  const itemsList = node.querySelector(".items-list");
+  const addBtn = node.querySelector(".add-item-button");
+  addBtn.textContent = "+ Add an Ingredient";
+
+  if (!menuState.ingredients) menuState.ingredients = [];
+  menuState.ingredients.forEach((ing, iIdx) => {
+    itemsList.appendChild(buildIngredientRow(ing, iIdx));
+  });
+
+  addBtn.addEventListener("click", () => {
+    menuState.ingredients.push({ name: "", qty: "" });
+    renderMenu();
+  });
+
+  return node;
+}
+
+function buildIngredientRow(ing, iIdx) {
+  // Reuses the wine-list item row's two-input layout (name left, a short
+  // value right) since a quantity like "1140 G" is the same shape as a
+  // price.
+  const row = document.createElement("div");
+  row.className = "catlist-item-row";
+
+  const nameInput = document.createElement("input");
+  nameInput.type = "text";
+  nameInput.className = "catlist-item-name-input";
+  nameInput.value = ing.name || "";
+  nameInput.placeholder = "e.g. MILK";
+  nameInput.addEventListener("input", () => { ing.name = nameInput.value; });
+  row.appendChild(nameInput);
+
+  const qtyInput = document.createElement("input");
+  qtyInput.type = "text";
+  qtyInput.className = "catlist-item-price-input";
+  qtyInput.value = ing.qty || "";
+  qtyInput.placeholder = "e.g. 1140 G";
+  qtyInput.addEventListener("input", () => { ing.qty = qtyInput.value; });
+  row.appendChild(qtyInput);
+
+  row.appendChild(buildMoveControls(menuState.ingredients, iIdx, "ingredient"));
+
+  const removeBtn = document.createElement("button");
+  removeBtn.type = "button";
+  removeBtn.className = "remove-item-button";
+  removeBtn.title = "Remove this ingredient";
+  removeBtn.textContent = "✕";
+  removeBtn.addEventListener("click", () => {
+    menuState.ingredients.splice(iIdx, 1);
+    renderMenu();
+  });
+  row.appendChild(removeBtn);
+
+  return row;
+}
+
+function buildMethodGroup() {
+  const node = groupTpl.content.cloneNode(true);
+  node.querySelector(".group-heading").textContent = "Method (wrap a word in ** to bold it, e.g. **85°C**)";
+  const itemsList = node.querySelector(".items-list");
+  const addBtn = node.querySelector(".add-item-button");
+  addBtn.textContent = "+ Add a Step";
+
+  if (!menuState.method) menuState.method = [];
+  menuState.method.forEach((step, iIdx) => {
+    const row = lineItemTpl.content.cloneNode(true);
+    const input = row.querySelector(".line-input");
+    input.value = step || "";
+    input.placeholder = "e.g. Heat to **85°C**, hold **2 min**.";
+    input.addEventListener("input", () => { menuState.method[iIdx] = input.value; });
+    const removeBtn = row.querySelector(".remove-item-button");
+    removeBtn.parentNode.insertBefore(buildMoveControls(menuState.method, iIdx, "step"), removeBtn);
+    removeBtn.addEventListener("click", () => {
+      menuState.method.splice(iIdx, 1);
+      renderMenu();
+    });
+    itemsList.appendChild(row);
+  });
+
+  addBtn.addEventListener("click", () => {
+    menuState.method.push("");
+    renderMenu();
+  });
+
+  return node;
 }
 
 // ---------------------------------------------------------------------
@@ -290,6 +450,8 @@ function buildPageEditor(page, pIdx) {
   header.appendChild(removeBtn);
   panel.appendChild(header);
 
+  panel.appendChild(buildPageOverridesPanel(page));
+
   const body = document.createElement("div");
   body.className = "catlist-page-body";
 
@@ -310,6 +472,79 @@ function buildPageEditor(page, pIdx) {
 
   panel.appendChild(body);
   return panel;
+}
+
+// A collapsible "just this page" settings panel -- lets someone fix a
+// single problematic page (too big, overflowing, too sparse) by setting
+// its own font sizes/gaps, without touching the shared Layout settings
+// that every other page still uses. Blank = inherit the document default.
+function buildPageOverridesPanel(page) {
+  const details = document.createElement("details");
+  details.className = "catlist-page-overrides";
+  const hasOverrides = page.layout_overrides && Object.keys(page.layout_overrides).length > 0;
+  details.open = hasOverrides;
+
+  const summary = document.createElement("summary");
+  summary.textContent = hasOverrides
+    ? "Page settings (font size & spacing) -- customized"
+    : "Page settings (font size & spacing)";
+  details.appendChild(summary);
+
+  const note = document.createElement("p");
+  note.className = "admin-panel-sub";
+  note.textContent = "Leave a field blank to use the Layout tab's default for every page. Fill one in to fix just this page.";
+  details.appendChild(note);
+
+  const grid = document.createElement("div");
+  grid.className = "page-overrides-grid";
+
+  PAGE_OVERRIDABLE_KEYS.forEach(key => {
+    const field = document.createElement("div");
+    field.className = "field";
+
+    const label = document.createElement("label");
+    label.textContent = adminFieldLabel(key);
+    field.appendChild(label);
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.step = "0.5";
+    input.placeholder = "default";
+    if (page.layout_overrides && page.layout_overrides[key] !== undefined) {
+      input.value = page.layout_overrides[key];
+    }
+    input.addEventListener("input", () => {
+      const raw = input.value.trim();
+      if (raw === "") {
+        if (page.layout_overrides) {
+          delete page.layout_overrides[key];
+          if (Object.keys(page.layout_overrides).length === 0) delete page.layout_overrides;
+        }
+        return;
+      }
+      const num = parseFloat(raw);
+      if (Number.isNaN(num)) return;
+      if (!page.layout_overrides) page.layout_overrides = {};
+      page.layout_overrides[key] = num;
+    });
+    field.appendChild(input);
+
+    grid.appendChild(field);
+  });
+
+  details.appendChild(grid);
+
+  const resetBtn = document.createElement("button");
+  resetBtn.type = "button";
+  resetBtn.className = "remove-item-button page-overrides-reset";
+  resetBtn.textContent = "Clear all overrides for this page";
+  resetBtn.addEventListener("click", () => {
+    delete page.layout_overrides;
+    renderMenu();
+  });
+  details.appendChild(resetBtn);
+
+  return details;
 }
 
 function buildCategoryBlock(page, cat, cIdx) {
@@ -824,6 +1059,7 @@ root.addEventListener("click", e => {
 
 let adminFieldsState = {};
 let adminFontsState = {};
+let adminAlignmentState = {};
 let availableFonts = [];
 let availableDisplayFonts = [];
 
@@ -837,6 +1073,18 @@ const FONT_ROLE_LABELS = {
   note: "Small notes",
 };
 
+// Which text each alignment role controls -- same idea as FONT_ROLE_LABELS,
+// for the "location" (left/center/right) of a role's text on the page.
+const ALIGN_ROLE_LABELS = {
+  page_title: "Page title",
+  category: "Category headings",
+  subgroup: "Sub-group headings",
+  title: "Title",
+  subtitle: "Subtitle",
+  course_name: "Course names",
+  description: "Descriptions",
+};
+
 function fontFileLabel(path) {
   return path.split("/").pop().replace(/\.(ttf|otf)$/i, "");
 }
@@ -847,9 +1095,47 @@ async function loadAdminFields() {
   const data = await res.json();
   adminFieldsState = data.fields || {};
   adminFontsState = data.fonts || {};
+  adminAlignmentState = data.alignment || {};
   availableFonts = data.available_fonts || [];
   availableDisplayFonts = data.available_display_fonts || availableFonts;
   renderAdminFields();
+}
+
+function renderAdminAlignment() {
+  if (!Object.keys(adminAlignmentState).length) return;
+
+  const heading = document.createElement("h4");
+  heading.className = "admin-subheading";
+  heading.textContent = "Text location (alignment)";
+  adminFields.appendChild(heading);
+
+  const grid = document.createElement("div");
+  grid.className = "admin-fields";
+
+  Object.keys(adminAlignmentState).forEach(role => {
+    const row = document.createElement("div");
+    row.className = "admin-field-row";
+
+    const label = document.createElement("label");
+    label.textContent = ALIGN_ROLE_LABELS[role] || role;
+    row.appendChild(label);
+
+    const select = document.createElement("select");
+    select.className = "admin-font-select";
+    ["left", "center", "right"].forEach(value => {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = value[0].toUpperCase() + value.slice(1);
+      if (value === adminAlignmentState[role]) opt.selected = true;
+      select.appendChild(opt);
+    });
+    select.addEventListener("change", () => { adminAlignmentState[role] = select.value; });
+    row.appendChild(select);
+
+    grid.appendChild(row);
+  });
+
+  adminFields.appendChild(grid);
 }
 
 function renderAdminFonts() {
@@ -942,6 +1228,7 @@ function renderAdminFields() {
   }
 
   renderAdminFonts();
+  renderAdminAlignment();
 }
 
 async function saveAdminFields() {
@@ -951,11 +1238,12 @@ async function saveAdminFields() {
     const res = await fetch(`/api/layout?template=${encodeURIComponent(currentTemplateId)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fields: adminFieldsState, fonts: adminFontsState }),
+      body: JSON.stringify({ fields: adminFieldsState, fonts: adminFontsState, alignment: adminAlignmentState }),
     });
     const result = await res.json();
     adminFieldsState = result.fields || adminFieldsState;
     adminFontsState = result.fonts || adminFontsState;
+    adminAlignmentState = result.alignment || adminAlignmentState;
     renderAdminFields();
     adminStatus.textContent = "✅ Saved. Preview or Save the menu to see the new layout.";
   } catch (e) {
@@ -965,8 +1253,12 @@ async function saveAdminFields() {
   }
 }
 
-adminToggleBtn.addEventListener("click", () => {
-  adminPanel.hidden = !adminPanel.hidden;
+railBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const target = btn.dataset.panel;
+    railBtns.forEach(b => b.classList.toggle("active", b === btn));
+    dockPanels.forEach(p => p.classList.toggle("active", p.id === `panel-${target}`));
+  });
 });
 adminSaveBtn.addEventListener("click", saveAdminFields);
 adminPreviewBtn.addEventListener("click", async () => {
@@ -976,7 +1268,7 @@ adminPreviewBtn.addEventListener("click", async () => {
 
 async function saveMenu() {
   saveBtn.disabled = true;
-  saveBtn.textContent = "Saving…";
+  saveBtnLabel.textContent = "Saving…";
   saveStatus.innerHTML = "";
 
   try {
@@ -1001,7 +1293,7 @@ async function saveMenu() {
     saveStatus.innerHTML = `<div class="err">Something went wrong saving. Please try again.</div>`;
   } finally {
     saveBtn.disabled = false;
-    saveBtn.textContent = "💾 Save & Create Print PDF";
+    saveBtnLabel.textContent = "Save & Create PDF";
   }
 }
 

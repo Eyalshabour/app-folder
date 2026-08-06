@@ -97,7 +97,7 @@ for t in templates:
         # A menu is "populated" if it has any of the shapes this app prints.
         # The exterieur table-tent cards legitimately carry only a title and
         # prices -- no course or item list -- so a bare title+price counts.
-        has = (d.get("courses") or d.get("pages") or d.get("items")
+        has = (d.get("courses") or d.get("pages") or d.get("items") or d.get("ingredients")
                or (d.get("title") and d.get("price")))
         if not has:
             empty.append(f"{t['id']}/{lang}")
@@ -174,15 +174,17 @@ if wine:
     check("wine list is multi-page", len(PdfReader(wine).pages) > 5,
           f"only {len(PdfReader(wine).pages)} pages")
 
-# Every page of a categorized list shares ONE font size across the whole
-# document (see _compute shared scale in pdf_generator.py), rather than each
-# page shrinking independently -- so an unusually long page (e.g. a big
-# region list) no longer drags its own text down to a barely-legible size.
-# The tradeoff: that one busy page is allowed to spill onto a "(suite)"
-# continuation page instead, so page count is no longer guaranteed to match
-# the logical page count 1:1. What must still hold: the shared item font
-# never shrinks below what _MIN_SHRINK_SCALE allows.
+# Every page of a categorized list uses the SAME font sizes/spacing from its
+# layout config now -- no more per-page shrinking to force everything onto
+# one page (see generate_categorized_list_pdf in pdf_generator.py). A page
+# that's too long to fit spills onto an automatic "(suite)" continuation
+# page instead, so page count is no longer guaranteed to match the logical
+# page count 1:1.
 import pdf_generator
+
+check("categorized-list pages no longer auto-shrink font size",
+      not hasattr(pdf_generator, "_MIN_SHRINK_SCALE"),
+      "shrink-to-fit scaling should have been removed")
 
 for tid in ("winelist", "digestifs"):
     key = f"{tid}/fr"
@@ -192,11 +194,45 @@ for tid in ("winelist", "digestifs"):
         check(f"{tid}: page count is at least the logical page count",
               n_pdf >= n_logical, f"{n_logical} logical pages became {n_pdf} PDF pages")
 
-        cfg = json.load(open(f"config/templates/{tid}.json"))
-        min_item_size = cfg["item_size"] * pdf_generator._MIN_SHRINK_SCALE
-        check(f"{tid}: item font never shrinks below the floor",
-              min_item_size >= cfg["item_size"] * 0.84,
-              f"floor allows {min_item_size:.2f}pt from a {cfg['item_size']}pt base")
+# A single page can carry its own layout_overrides (smaller/larger font
+# sizes and gaps than the document default) so someone can fix just the
+# one page that's running long, without touching every other page --
+# see PAGE_OVERRIDABLE_KEYS in app.js and _page_effective_cfg in
+# pdf_generator.py.
+import copy
+import tempfile
+
+winelist_cfg = json.load(open("config/templates/winelist.json"))
+winelist_content = json.load(open("sample_data/winelist/fr.json"))
+
+_tmpdir = tempfile.mkdtemp(prefix="winelist_override_test_")
+baseline_pdf = os.path.join(_tmpdir, "baseline.pdf")
+pdf_generator.generate_categorized_list_pdf(winelist_content, winelist_cfg, baseline_pdf, APP_DIR)
+baseline_pages = len(PdfReader(baseline_pdf).pages)
+
+overridden_content = copy.deepcopy(winelist_content)
+overridden_content["pages"][1]["layout_overrides"] = {"item_size": 6.0, "category_size": 8.0}
+overridden_pdf = os.path.join(_tmpdir, "overridden.pdf")
+pdf_generator.generate_categorized_list_pdf(overridden_content, winelist_cfg, overridden_pdf, APP_DIR)
+overridden_pages = len(PdfReader(overridden_pdf).pages)
+
+check("page-level layout_overrides don't change other pages' page count",
+      overridden_pages == baseline_pages,
+      f"baseline {baseline_pages} pages, with one page overridden {overridden_pages} pages")
+
+overridden_text_page2 = (PdfReader(overridden_pdf).pages[1].extract_text() or "")
+baseline_text_page2 = (PdfReader(baseline_pdf).pages[1].extract_text() or "")
+check("overridden page still renders its own content",
+      "Antech" in overridden_text_page2 and "Limoux" in overridden_text_page2,
+      "expected page 2 content missing after override")
+
+# Overrides object itself shouldn't leak onto the untouched page.
+check("layout_overrides on one page doesn't get copied to another",
+      "layout_overrides" not in overridden_content["pages"][2],
+      "override bled into a page that never set one")
+
+import shutil
+shutil.rmtree(_tmpdir, ignore_errors=True)
 
 
 # ---------------------------------------------------------------- preview
@@ -248,6 +284,19 @@ check("admin size change persists", float(changed) == 11.0, f"got {changed}")
 client.post("/api/layout?template=winelist", json={"fields": {"item_size": orig}, "fonts": {}})
 restored = client.get("/api/layout?template=winelist").get_json()["fields"]["item_size"]
 check("admin change reverts cleanly", float(restored) == float(orig))
+
+orig_align = client.get("/api/layout?template=winelist").get_json()["alignment"]["category"]
+client.post("/api/layout?template=winelist", json={"fields": {}, "alignment": {"category": "right"}})
+changed_align = client.get("/api/layout?template=winelist").get_json()["alignment"]["category"]
+check("admin alignment change persists", changed_align == "right", f"got {changed_align}")
+
+client.post("/api/layout?template=winelist", json={"fields": {}, "alignment": {"category": "not-a-real-value"}})
+after_bad = client.get("/api/layout?template=winelist").get_json()["alignment"]["category"]
+check("invalid alignment value is refused", after_bad == "right", f"got {after_bad}")
+
+client.post("/api/layout?template=winelist", json={"fields": {}, "alignment": {"category": orig_align}})
+restored_align = client.get("/api/layout?template=winelist").get_json()["alignment"]["category"]
+check("admin alignment change reverts cleanly", restored_align == orig_align)
 
 
 # --------------------------------------------------------- wine editability

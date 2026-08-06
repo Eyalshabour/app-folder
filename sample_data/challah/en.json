@@ -1,0 +1,56 @@
+{
+  "ingredients": [
+    {
+      "name": "WATER",
+      "qty": "1,25 kg"
+    },
+    {
+      "name": "FLOUR",
+      "qty": "2,5 kg"
+    },
+    {
+      "name": "YEAST",
+      "qty": "75 g"
+    },
+    {
+      "name": "SUGAR",
+      "qty": "150 g"
+    },
+    {
+      "name": "SALT",
+      "qty": "75 g"
+    },
+    {
+      "name": "OIL",
+      "qty": "255 g"
+    },
+    {
+      "name": "EGGS",
+      "qty": "2"
+    },
+    {
+      "name": "EGG YOLKS",
+      "qty": "2 + 10 g WATER"
+    },
+    {
+      "name": "CORIANDER SEEDS",
+      "qty": "30 g"
+    },
+    {
+      "name": "SESAME SEEDS",
+      "qty": "30 g"
+    },
+    {
+      "name": "BLACK SESAME SEEDS",
+      "qty": "30 g"
+    }
+  ],
+  "method": [
+    "MIX WATER, FLOUR, YEAST, SUGAR AND SALT. ADD SLOWLY THE OIL AND EGGS",
+    "LET THE DOUGH RISE FOR A NIGHT IN THE FRIDGE.",
+    "DIVIDE IN 80g PORTIONS ET PLACE THEM IN MOULDS. LET THEM RISE FOR 2 HOURS.",
+    "BRUSH THE EGG YOLKS ON THE SMALL PORTIONS AND ADD THE SEEDS.",
+    "COOK 9 MINUTES AT 180\u00b0 IN THE OVEN."
+  ],
+  "title": "LA CHALLAH SHABOUR"
+}

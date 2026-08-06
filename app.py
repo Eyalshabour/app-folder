@@ -71,7 +71,8 @@ def drive_content_filename(template_id, language):
 # Fields in a layout config that the admin panel is allowed to show/edit.
 # Deliberately excludes "fonts" (file paths -- a typo would break rendering
 # entirely) and "layout_type"/"_comment" (structural, not visual tuning).
-ADMIN_EDITABLE_SKIP_KEYS = {"fonts", "layout_type", "_comment"}
+ADMIN_EDITABLE_SKIP_KEYS = {"fonts", "alignment", "layout_type", "_comment"}
+ALLOWED_ALIGNMENTS = {"left", "center", "right"}
 
 
 def render_pdf_for_template(template_id, layout_cfg, menu_data, output_path):
@@ -81,6 +82,10 @@ def render_pdf_for_template(template_id, layout_cfg, menu_data, output_path):
         return pdf_generator.generate_price_card_pdf(menu_data, layout_cfg, output_path, BASE_DIR)
     elif layout_type == "categorized_list":
         return pdf_generator.generate_categorized_list_pdf(menu_data, layout_cfg, output_path, BASE_DIR)
+    elif layout_type == "recipe_card":
+        return pdf_generator.generate_recipe_card_pdf(menu_data, layout_cfg, output_path, BASE_DIR)
+    elif layout_type == "simple_recipe_card":
+        return pdf_generator.generate_simple_recipe_card_pdf(menu_data, layout_cfg, output_path, BASE_DIR)
     else:
         return pdf_generator.generate_pdf(menu_data, layout_cfg, output_path, BASE_DIR)
 
@@ -88,6 +93,14 @@ def render_pdf_for_template(template_id, layout_cfg, menu_data, output_path):
 @app.route("/")
 def index():
     return render_template("index.html", drive_connected=drive_service.is_configured())
+
+
+@app.route("/assets/<path:filename>")
+def assets(filename):
+    """Serves the brand font/icon files (assets/fonts, assets/icons) so the
+    editor app's own UI can use them too -- e.g. the SHABOUR display font
+    via @font-face in style.css -- not just the generated PDFs."""
+    return send_from_directory(os.path.join(BASE_DIR, "assets"), filename)
 
 
 @app.route("/api/templates", methods=["GET"])
@@ -246,6 +259,7 @@ def get_layout():
     return jsonify({
         "fields": fields,
         "fonts": layout_cfg.get("fonts", {}),
+        "alignment": layout_cfg.get("alignment", {}),
         # The display role is rasterised, so it can use any font. Every other
         # role is drawn as real text and needs an embeddable one.
         "available_fonts": available_fonts(body_only=True),
@@ -284,6 +298,17 @@ def save_layout():
                 fonts_cfg[role] = rel_path
         layout_cfg["fonts"] = fonts_cfg
 
+    # Alignment is a per-role choice of "left"/"center"/"right" -- validated
+    # against a fixed allow-list the same way fonts are, so a bad value
+    # can't silently break a role's rendering.
+    align_updates = payload.get("alignment")
+    if isinstance(align_updates, dict):
+        align_cfg = dict(layout_cfg.get("alignment", {}))
+        for role, value in align_updates.items():
+            if value in ALLOWED_ALIGNMENTS:
+                align_cfg[role] = value
+        layout_cfg["alignment"] = align_cfg
+
     for key, new_value in updates.items():
         if key in ADMIN_EDITABLE_SKIP_KEYS:
             continue
@@ -311,6 +336,7 @@ def save_layout():
             if k not in ADMIN_EDITABLE_SKIP_KEYS and isinstance(v, (int, float, bool, str))
         },
         "fonts": layout_cfg.get("fonts", {}),
+        "alignment": layout_cfg.get("alignment", {}),
         "available_fonts": available_fonts(body_only=True),
         "available_display_fonts": available_fonts(),
     })

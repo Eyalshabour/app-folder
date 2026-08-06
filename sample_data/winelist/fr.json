@@ -43,7 +43,7 @@
                 },
                 {
                   "price": "20",
-                  "text": "Domaine Vial-Magn\u00e8res \u00abArmenn\u00bb 2022, Collioure"
+                  "text": "Stellaire \u00abAscendant\u00bb 2024, Alpilles"
                 },
                 {
                   "price": "29",
@@ -108,7 +108,7 @@
                   "text": "Cristom \u00abEola-Amity Hills\u00bb 2020, Willamette Valley"
                 }
               ],
-              "name": "Etats-Unis"
+              "name": "\u00c9tats-Unis"
             }
           ],
           "name": "blanc"
@@ -185,7 +185,7 @@
               "items": [
                 {
                   "price": "14",
-                  "text": "Pisano \u00abRPF\u00bb 2022, Progreso"
+                  "text": "Pisano \u00abRPF\u00bb 2021, Progreso"
                 }
               ],
               "name": "Uruguay"
@@ -197,12 +197,18 @@
                   "text": "Ridge \u00abThree Valleys\u00bb 2021, Sonoma Valley"
                 }
               ],
-              "name": "Etats-Unis"
+              "name": "\u00c9tats-Unis"
             }
           ],
           "name": "rouge"
         }
       ],
+      "layout_overrides": {
+        "fonts": {
+          "category": "assets/fonts/AvenirNextLTPro-Bold.ttf",
+          "subgroup": "assets/fonts/SHABOUR-SemiBold.otf"
+        }
+      },
       "title": "VInS AU VERRE"
     },
     {
@@ -433,10 +439,10 @@
                   "text": "Pinto \u00abHolot\u00bb 2022, Yeruham"
                 }
               ],
-              "name": "Negev"
+              "name": "N\u00e9guev"
             }
           ],
-          "name": "israel"
+          "name": "Isra\u00ebl"
         },
         {
           "groups": [
@@ -479,7 +485,7 @@
               "name": "Cr\u00e8te"
             }
           ],
-          "name": "grece"
+          "name": "Gr\u00e8ce"
         },
         {
           "groups": [
@@ -517,7 +523,7 @@
                   "text": "Sept \u00abZitani\u00bb 2020, Zahl\u00e9"
                 }
               ],
-              "name": "Vall\u00e9e de B\u00e9kaa"
+              "name": "Vall\u00e9e de la Bekaa"
             }
           ],
           "name": "liban"
@@ -748,20 +754,6 @@
             }
           ],
           "name": "Roussillon"
-        },
-        {
-          "groups": [
-            {
-              "items": [
-                {
-                  "price": "169",
-                  "text": "Domaine Comte Abbatucci \u00abG\u00e9n\u00e9ral\u00bb 2023, Sart\u00e8ne-Corse"
-                }
-              ],
-              "name": null
-            }
-          ],
-          "name": "Corse"
         }
       ],
       "title": "VInS BLAnCS - FRAnCE"
@@ -810,7 +802,7 @@
               "items": [
                 {
                   "price": "141",
-                  "text": "Dom\u00e4ne Wachau \u00abSmaragd Kellerberg\u00bb 2020, Durnstein"
+                  "text": "Dom\u00e4ne Wachau \u00abSmaragd Kellerberg\u00bb 2021, Durnstein"
                 },
                 {
                   "price": "152",
@@ -823,7 +815,7 @@
               "items": [
                 {
                   "price": "83",
-                  "text": "Brundlmayer \u00abRied Loisenberg\u00bb 2022"
+                  "text": "Brundlmayer \u00abRied Loisenberg\u00bb 2023"
                 },
                 {
                   "price": "268",
@@ -910,7 +902,7 @@
               "name": "Erevan"
             }
           ],
-          "name": "ARMEnIe"
+          "name": "Arm\u00e9nie"
         },
         {
           "groups": [
@@ -935,7 +927,7 @@
                   "text": "Ch\u00e2teau Pauqu\u00e9 \u00abClos du Paradis\u00bb 2001, Grevenmacher"
                 }
               ],
-              "name": "Mosselle"
+              "name": "Moselle"
             }
           ],
           "name": "LUXEMBOURG"
@@ -949,10 +941,6 @@
           "groups": [
             {
               "items": [
-                {
-                  "price": "82",
-                  "text": "Rall \u00abGrenache Blanc\u00bb 2022, Piekenierskloof"
-                },
                 {
                   "price": "94",
                   "text": "Alheit Vineyards \u00abHereafter Here\u00bb 2024"
@@ -1064,7 +1052,7 @@
               "name": "Sonoma Valley"
             }
           ],
-          "name": "etat-unis"
+          "name": "\u00c9tats-Unis"
         },
         {
           "groups": [
@@ -1078,7 +1066,7 @@
               "name": "Marlborough"
             }
           ],
-          "name": "nouvelle z\u00e9lande"
+          "name": "Nouvelle-Z\u00e9lande"
         },
         {
           "groups": [
@@ -1158,7 +1146,7 @@
               "name": "N\u00e9guev"
             }
           ],
-          "name": "ISRAEL"
+          "name": "Isra\u00ebl"
         },
         {
           "groups": [
@@ -1196,7 +1184,7 @@
                   "text": "Oikonomoy \u00abAntigone\u00bb 2004"
                 }
               ],
-              "name": "Cr\u00e8tes"
+              "name": "Cr\u00e8te"
             },
             {
               "items": [
@@ -1207,16 +1195,12 @@
                 {
                   "price": "111",
                   "text": "Kir Yanni \u00abRamnista\u00bb 2011"
-                },
-                {
-                  "price": "111",
-                  "text": "Kir Yanni \u00abRamnista\u00bb 2010"
                 }
               ],
               "name": "Naoussa"
             }
           ],
-          "name": "Grece"
+          "name": "Gr\u00e8ce"
         },
         {
           "groups": [
@@ -1339,7 +1323,7 @@
                 },
                 {
                   "price": "2551",
-                  "text": "Ch\u00e2teau Latour 2000, Pauillac"
+                  "text": "Ch\u00e2teau Latour 2005, Pauillac"
                 },
                 {
                   "price": "2950",
@@ -1705,12 +1689,7 @@
               "name": "Balaton"
             },
             {
-              "items": [
-                {
-                  "price": "98",
-                  "text": "Peter Vida \u00abBonsai\u00bb 2023, Szekszard"
-                }
-              ],
+              "items": [],
               "name": "Pannonie"
             }
           ],
@@ -1860,7 +1839,7 @@
               "name": "California"
             }
           ],
-          "name": "etat-unis"
+          "name": "\u00c9tats-Unis"
         },
         {
           "groups": [
@@ -1874,7 +1853,7 @@
               "name": "Hawk's Bay"
             }
           ],
-          "name": "nouvelle-zelande"
+          "name": "Nouvelle-Z\u00e9lande"
         },
         {
           "groups": [
@@ -1896,7 +1875,7 @@
               "items": [
                 {
                   "price": "72",
-                  "text": "Pisano \u00abRPF\u00bb 2022"
+                  "text": "Pisano \u00abRPF\u00bb 2021"
                 }
               ],
               "name": "Progreso"
@@ -1909,6 +1888,10 @@
     },
     {
       "categories": [
+        {
+          "groups": [],
+          "name": "VInS ROSES"
+        },
         {
           "groups": [
             {
@@ -1929,7 +1912,7 @@
               "name": null
             }
           ],
-          "name": "israel"
+          "name": "Isra\u00ebl"
         },
         {
           "groups": [
@@ -1966,12 +1949,11 @@
             }
           ],
           "name": "France"
-        }
-      ],
-      "title": "VInS ROSES"
-    },
-    {
-      "categories": [
+        },
+        {
+          "groups": [],
+          "name": "MAGnUMS"
+        },
         {
           "groups": [
             {
@@ -2006,7 +1988,7 @@
               "name": null
             }
           ],
-          "name": "etats unis"
+          "name": "\u00c9tats-Unis"
         },
         {
           "groups": [
@@ -2020,7 +2002,7 @@
               "name": null
             }
           ],
-          "name": "autriche"
+          "name": "Autriche"
         },
         {
           "groups": [
@@ -2037,7 +2019,7 @@
           "name": "Espagne"
         }
       ],
-      "title": "MAGnUMS"
+      "title": "VInS ROSES ET MAGnUMS"
     }
   ]
 }
