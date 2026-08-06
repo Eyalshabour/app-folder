@@ -12,9 +12,10 @@ const templateSelect = document.getElementById("template-select");
 const langTabs = document.getElementById("lang-tabs");
 
 const previewBtn = document.getElementById("preview-btn");
-const previewPanel = document.getElementById("preview-panel");
 const previewFrame = document.getElementById("preview-frame");
-const previewCloseBtn = document.getElementById("preview-close-btn");
+const previewPlaceholder = document.getElementById("preview-placeholder");
+const previewStatusText = document.getElementById("preview-status-text");
+const previewRefreshBtn = document.getElementById("preview-refresh-btn");
 
 const adminToggleBtn = document.getElementById("admin-toggle-btn");
 const adminPanel = document.getElementById("admin-panel");
@@ -723,32 +724,49 @@ async function loadMenu() {
   const res = await fetch(`/api/menu?template=${encodeURIComponent(currentTemplateId)}&language=${encodeURIComponent(currentLanguage)}`);
   const data = await res.json();
   menuState = data.menu;
+  currentCatlistPageIndex = 0;
   renderMenu();
-  closePreviewPanel();
+  resetLivePreview();
+  refreshPreview({ silent: true });
   await loadAdminFields();
 }
 
 // ---------------------------------------------------------------------
-// Preview: renders whatever is currently in the editor (unsaved changes
-// included) to a scratch PDF and shows it inline, without creating a new
-// dated file or overwriting the saved content.
+// Live preview: a docked canvas next to the form, like a design tool.
+// Renders whatever is currently in the editor (unsaved changes included)
+// to a scratch PDF and shows it inline, without creating a new dated file
+// or overwriting the saved content. Auto-refreshes shortly after every
+// edit (debounced, via scheduleLivePreview -- wired up near the bottom of
+// this file), and can also be triggered immediately by the Preview buttons.
 // ---------------------------------------------------------------------
 
-function openPreviewPanel(url) {
-  previewFrame.src = url;
-  previewPanel.hidden = false;
-  previewPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-}
+let previewDebounceTimer = null;
+let previewRequestId = 0; // guards against a slow, stale response clobbering a newer one
 
-function closePreviewPanel() {
-  previewPanel.hidden = true;
+function resetLivePreview() {
+  clearTimeout(previewDebounceTimer);
   previewFrame.src = "about:blank";
+  previewPlaceholder.hidden = false;
+  previewStatusText.textContent = "";
 }
 
-async function runPreview(button) {
-  const originalText = button.textContent;
-  button.disabled = true;
-  button.textContent = "Rendering…";
+function scheduleLivePreview() {
+  clearTimeout(previewDebounceTimer);
+  previewStatusText.textContent = "Editing…";
+  previewDebounceTimer = setTimeout(() => refreshPreview({ silent: true }), 900);
+}
+
+async function refreshPreview({ silent = false, button = null } = {}) {
+  clearTimeout(previewDebounceTimer);
+  const myRequestId = ++previewRequestId;
+
+  if (button) {
+    button.dataset.originalText = button.dataset.originalText || button.textContent;
+    button.disabled = true;
+    button.textContent = "Rendering…";
+  }
+  if (silent) previewStatusText.textContent = "Updating preview…";
+
   try {
     const res = await fetch(`/api/preview?template=${encodeURIComponent(currentTemplateId)}&language=${encodeURIComponent(currentLanguage)}`, {
       method: "POST",
@@ -756,21 +774,45 @@ async function runPreview(button) {
       body: JSON.stringify(menuState),
     });
     const result = await res.json();
+    if (myRequestId !== previewRequestId) return; // superseded by a newer edit
     if (!result.ok) {
-      alert("Couldn't render a preview: " + (result.error || "unknown error"));
+      previewStatusText.textContent = "Couldn't render preview.";
+      if (!silent) alert("Couldn't render a preview: " + (result.error || "unknown error"));
       return;
     }
-    openPreviewPanel(result.preview_url);
+    // The server writes the preview PDF to the same filename every time
+    // (only the ?t=<date> cache-buster changes, once a day), so re-setting
+    // .src to an identical string wouldn't reload the iframe on a second
+    // edit within the same day. Add a per-request cache-buster so every
+    // refresh actually shows the latest render.
+    const bustUrl = result.preview_url + (result.preview_url.includes("?") ? "&" : "?") + "r=" + myRequestId;
+    previewFrame.src = bustUrl;
+    previewPlaceholder.hidden = true;
+    previewStatusText.textContent = "";
   } catch (e) {
-    alert("Couldn't render a preview. Please try again.");
+    if (myRequestId !== previewRequestId) return;
+    previewStatusText.textContent = "Couldn't render preview.";
+    if (!silent) alert("Couldn't render a preview. Please try again.");
   } finally {
-    button.disabled = false;
-    button.textContent = originalText;
+    if (myRequestId === previewRequestId && button) {
+      button.disabled = false;
+      button.textContent = button.dataset.originalText;
+    }
   }
 }
 
-previewBtn.addEventListener("click", () => runPreview(previewBtn));
-previewCloseBtn.addEventListener("click", closePreviewPanel);
+previewBtn.addEventListener("click", () => refreshPreview({ button: previewBtn }));
+previewRefreshBtn.addEventListener("click", () => refreshPreview({ button: previewRefreshBtn }));
+
+// Any edit inside the form -- typing, or clicking add/remove/reorder/spacer
+// buttons -- schedules a debounced live-preview refresh, so the canvas
+// stays in sync without a manual click. Delegated on the container (rather
+// than on each individual field) so it keeps working across every
+// renderMenu() rebuild, and for fields added later.
+root.addEventListener("input", scheduleLivePreview);
+root.addEventListener("click", e => {
+  if (e.target.closest("button")) scheduleLivePreview();
+});
 
 // ---------------------------------------------------------------------
 // Admin panel: lets a technical user tune font sizes, margins and gaps
@@ -928,7 +970,7 @@ adminToggleBtn.addEventListener("click", () => {
 adminSaveBtn.addEventListener("click", saveAdminFields);
 adminPreviewBtn.addEventListener("click", async () => {
   await saveAdminFields();
-  await runPreview(adminPreviewBtn);
+  await refreshPreview({ button: adminPreviewBtn });
 });
 
 async function saveMenu() {
