@@ -11,7 +11,6 @@ const saveStatus = document.getElementById("save-status");
 const templateSelect = document.getElementById("template-select");
 const langTabs = document.getElementById("lang-tabs");
 
-const previewBtn = document.getElementById("preview-btn");
 const previewFrame = document.getElementById("preview-frame");
 const previewPlaceholder = document.getElementById("preview-placeholder");
 const previewStatusText = document.getElementById("preview-status-text");
@@ -760,10 +759,13 @@ async function refreshPreview({ silent = false, button = null } = {}) {
   clearTimeout(previewDebounceTimer);
   const myRequestId = ++previewRequestId;
 
+  // Toggle a loading class rather than swapping button.textContent -- some
+  // of these buttons (the preview refresh button) have an SVG icon plus a
+  // label inside, and overwriting textContent would silently delete the
+  // icon node the first time this runs.
   if (button) {
-    button.dataset.originalText = button.dataset.originalText || button.textContent;
     button.disabled = true;
-    button.textContent = "Rendering…";
+    button.classList.add("is-loading");
   }
   if (silent) previewStatusText.textContent = "Updating preview…";
 
@@ -796,12 +798,11 @@ async function refreshPreview({ silent = false, button = null } = {}) {
   } finally {
     if (myRequestId === previewRequestId && button) {
       button.disabled = false;
-      button.textContent = button.dataset.originalText;
+      button.classList.remove("is-loading");
     }
   }
 }
 
-previewBtn.addEventListener("click", () => refreshPreview({ button: previewBtn }));
 previewRefreshBtn.addEventListener("click", () => refreshPreview({ button: previewRefreshBtn }));
 
 // Any edit inside the form -- typing, or clicking add/remove/reorder/spacer
@@ -986,13 +987,13 @@ async function saveMenu() {
     });
     const result = await res.json();
 
-    let html = `<div class="ok">✅ Saved! New menu ready: <a href="${result.download_url}" target="_blank">${result.filename}</a></div>`;
+    let html = `<div class="ok">Saved. New menu ready: <a href="${result.download_url}" target="_blank">${result.filename}</a></div>`;
     if (result.drive_link) {
       html += `<div class="ok">Uploaded to Google Drive.</div>`;
     }
     if (result.warnings && result.warnings.length) {
       result.warnings.forEach(w => {
-        html += `<div class="warn">⚠️ ${w}</div>`;
+        html += `<div class="warn">${w}</div>`;
       });
     }
     saveStatus.innerHTML = html;

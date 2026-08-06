@@ -696,9 +696,13 @@ _SCALABLE_KEYS = (
     "gap_after_category", "gap_after_subgroup", "gap_after_item",
     "gap_after_group_block",
 )
-# How far we'll shrink text/spacing on a page before giving up and letting it
-# spill onto an extra page -- below this it would stop being legible.
-_MIN_SHRINK_SCALE = 0.62
+# How far we'll shrink text/spacing across the whole document before giving
+# up and letting an exceptionally long page spill onto its own "(suite)"
+# continuation page instead. Kept fairly close to 1.0 -- since the shrink
+# scale is now shared by every page (see generate_categorized_list_pdf), a
+# low floor here would let one unusually long page (e.g. a big region list)
+# drag every other page's text down to a barely-legible size along with it.
+_MIN_SHRINK_SCALE = 0.85
 
 
 def _measure_categories_height(categories, cfg):
