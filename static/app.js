@@ -170,58 +170,125 @@ function buildMoveControls(arr, index, label) {
   return wrap;
 }
 
+// Which page of the categorized list (Wine List, Digestifs) is currently
+// being edited. Reset to 0 whenever a menu is (re)loaded -- see loadMenu().
+let currentCatlistPageIndex = 0;
+
 function renderCategorizedListMenu() {
   if (!menuState.pages) menuState.pages = [];
+  if (currentCatlistPageIndex >= menuState.pages.length) {
+    currentCatlistPageIndex = Math.max(0, menuState.pages.length - 1);
+  }
 
   const wrap = document.createElement("div");
   wrap.className = "catlist-wrap";
 
+  // Page tab strip -- edit one page at a time (like the language tabs
+  // above) instead of scrolling through every page at once.
+  const tabs = document.createElement("div");
+  tabs.className = "catlist-page-tabs";
   menuState.pages.forEach((page, pIdx) => {
-    wrap.appendChild(buildPageBlock(page, pIdx));
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "catlist-page-tab" + (pIdx === currentCatlistPageIndex ? " active" : "");
+    tab.textContent = page.title || `Page ${pIdx + 1}`;
+    tab.addEventListener("click", () => {
+      currentCatlistPageIndex = pIdx;
+      renderMenu();
+    });
+    tabs.appendChild(tab);
   });
 
-  const addPageBtn = document.createElement("button");
-  addPageBtn.type = "button";
-  addPageBtn.className = "add-item-button";
-  addPageBtn.textContent = "+ Add a Page";
-  addPageBtn.addEventListener("click", () => {
+  const addPageTab = document.createElement("button");
+  addPageTab.type = "button";
+  addPageTab.className = "catlist-page-tab catlist-page-tab-add";
+  addPageTab.textContent = "+ Page";
+  addPageTab.title = "Add a new page";
+  addPageTab.addEventListener("click", () => {
     menuState.pages.push({ title: "New Page", categories: [] });
+    currentCatlistPageIndex = menuState.pages.length - 1;
     renderMenu();
   });
-  wrap.appendChild(addPageBtn);
+  tabs.appendChild(addPageTab);
+
+  wrap.appendChild(tabs);
+
+  if (menuState.pages.length) {
+    wrap.appendChild(buildPageEditor(menuState.pages[currentCatlistPageIndex], currentCatlistPageIndex));
+  } else {
+    const empty = document.createElement("p");
+    empty.className = "admin-empty";
+    empty.textContent = 'No pages yet -- click "+ Page" to add one.';
+    wrap.appendChild(empty);
+  }
 
   root.appendChild(wrap);
 }
 
-function buildPageBlock(page, pIdx) {
-  const details = document.createElement("details");
-  details.className = "catlist-page";
-  details.open = false;
+function buildPageMoveControls(pIdx) {
+  const wrap = document.createElement("div");
+  wrap.className = "move-controls";
 
-  const summary = document.createElement("summary");
+  const up = document.createElement("button");
+  up.type = "button";
+  up.className = "move-button";
+  up.textContent = "▲";
+  up.title = "Move this page up";
+  up.disabled = pIdx === 0;
+  up.addEventListener("click", () => {
+    if (moveInArray(menuState.pages, pIdx, -1)) {
+      currentCatlistPageIndex = pIdx - 1;
+      renderMenu();
+    }
+  });
+
+  const down = document.createElement("button");
+  down.type = "button";
+  down.className = "move-button";
+  down.textContent = "▼";
+  down.title = "Move this page down";
+  down.disabled = pIdx === menuState.pages.length - 1;
+  down.addEventListener("click", () => {
+    if (moveInArray(menuState.pages, pIdx, 1)) {
+      currentCatlistPageIndex = pIdx + 1;
+      renderMenu();
+    }
+  });
+
+  wrap.appendChild(up);
+  wrap.appendChild(down);
+  return wrap;
+}
+
+function buildPageEditor(page, pIdx) {
+  const panel = document.createElement("div");
+  panel.className = "catlist-page-panel";
+
+  const header = document.createElement("div");
+  header.className = "catlist-page-panel-header";
+
   const titleInput = document.createElement("input");
   titleInput.type = "text";
   titleInput.className = "catlist-page-title-input";
   titleInput.value = page.title || "";
   titleInput.placeholder = "Page title";
-  titleInput.addEventListener("click", e => e.stopPropagation());
   titleInput.addEventListener("input", () => { page.title = titleInput.value; });
-  summary.appendChild(titleInput);
-  summary.appendChild(buildMoveControls(menuState.pages, pIdx, "page"));
+  header.appendChild(titleInput);
+
+  header.appendChild(buildPageMoveControls(pIdx));
 
   const removeBtn = document.createElement("button");
   removeBtn.type = "button";
   removeBtn.className = "remove-item-button";
   removeBtn.title = "Remove this page";
   removeBtn.textContent = "✕";
-  removeBtn.addEventListener("click", e => {
-    e.stopPropagation();
-    e.preventDefault();
+  removeBtn.addEventListener("click", () => {
     menuState.pages.splice(pIdx, 1);
+    currentCatlistPageIndex = Math.max(0, pIdx - 1);
     renderMenu();
   });
-  summary.appendChild(removeBtn);
-  details.appendChild(summary);
+  header.appendChild(removeBtn);
+  panel.appendChild(header);
 
   const body = document.createElement("div");
   body.className = "catlist-page-body";
@@ -241,8 +308,8 @@ function buildPageBlock(page, pIdx) {
   });
   body.appendChild(addCatBtn);
 
-  details.appendChild(body);
-  return details;
+  panel.appendChild(body);
+  return panel;
 }
 
 function buildCategoryBlock(page, cat, cIdx) {
