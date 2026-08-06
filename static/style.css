@@ -211,18 +211,28 @@ main {
 }
 
 /* Categorized-list menus (Wine List, Digestifs...): pages > categories >
-   sub-groups > items. Uses <details> so long documents stay manageable. */
-.catlist-page {
+   sub-groups > items. A tab strip lets you edit one page at a time instead
+   of scrolling through the whole document. */
+.catlist-page-tabs {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.catlist-page-tab {
+  font-size: 14px; padding: 9px 16px; border-radius: 8px; border: 2px solid #e6ddce;
+  background: #fff; cursor: pointer; color: #5a3e2b; max-width: 220px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.catlist-page-tab.active { background: #5a3e2b; border-color: #5a3e2b; color: #fff; font-weight: 600; }
+.catlist-page-tab-add {
+  border-style: dashed; color: #a97d4f;
+}
+.catlist-page-panel {
   background: #fff; border-radius: 14px; margin-bottom: 16px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #eee; overflow: hidden;
 }
-.catlist-page > summary {
-  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px;
+.catlist-page-panel-header {
+  display: flex; align-items: center; gap: 10px;
   padding: 16px 18px; background: #fbf6ee;
 }
-.catlist-page > summary::-webkit-details-marker { display: none; }
-.catlist-page > summary::before { content: "▸"; color: #a97d4f; font-size: 14px; }
-.catlist-page[open] > summary::before { content: "▾"; }
 .catlist-page-title-input {
   flex: 1; font-size: 18px; font-weight: 700; border: none; border-bottom: 2px solid #e6ddce;
   padding: 6px 2px; background: transparent; color: #5a3e2b;
