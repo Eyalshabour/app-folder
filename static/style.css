@@ -374,7 +374,11 @@ body {
 .catlist-category-body { padding: 4px 13px 13px; }
 
 .move-controls { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+<<<<<<< HEAD
+.item-row .move-controls { margin-top: 22px; }
+=======
 .item-row .move-controls { margin-top: 20px; }
+>>>>>>> origin/main
 .move-button {
   width: 24px; height: 17px; line-height: 1; padding: 0; border: 1px solid var(--border-strong); border-radius: 4px;
   background: var(--surface-sunken); color: var(--text-secondary); font-size: 9px; cursor: pointer;

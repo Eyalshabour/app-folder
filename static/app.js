@@ -589,6 +589,8 @@ function buildLineRow(key, iIdx, line) {
     const removeBtn = node.querySelector(".remove-item-button");
     removeBtn.parentNode.insertBefore(buildMoveControls(menuState[key], iIdx, "line"), removeBtn);
     removeBtn.addEventListener("click", () => {
+<<<<<<< HEAD
+=======
       menuState[key].splice(iIdx, 1);
       renderMenu();
     });
@@ -602,6 +604,7 @@ function buildLineRow(key, iIdx, line) {
     const removeBtn = node.querySelector(".remove-item-button");
     removeBtn.parentNode.insertBefore(buildMoveControls(menuState[key], iIdx, "sub-heading"), removeBtn);
     removeBtn.addEventListener("click", () => {
+>>>>>>> origin/main
       menuState[key].splice(iIdx, 1);
       renderMenu();
     });
