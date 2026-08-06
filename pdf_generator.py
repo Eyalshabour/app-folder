@@ -551,20 +551,97 @@ def generate_price_card_pdf(content, cfg, output_path, base_dir):
 # overflowing or warning -- there's no fixed card size to run out of.
 # ---------------------------------------------------------------------------
 
-def _draw_line_name_price(c, name, price, x_left, x_right, y, font_name, size, price_suffix=" €"):
-    c.setFont(font_name, size)
+def _wrap_text_to_width(c, text, font_name, size, max_width):
+    """Greedy word-wrap of `text` into lines that each fit within
+    max_width at the given font/size."""
+    words = text.split(" ")
+    lines = []
+    current = ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if not current or c.stringWidth(candidate, font_name, size) <= max_width:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines or [text]
+
+
+def _plan_item_line(c, name, price, avail_width, font_name, size, price_suffix=" €"):
+    """Decide how to lay out one "name ......... price" row within
+    avail_width. In a narrow column (see the 2-column fallback in
+    _CategorizedListFlow) a long wine name can run right into the price at
+    the row's normal size, so:
+      1. try it on one line at normal size,
+      2. if that overlaps, shrink this one line slightly (down to a gentle
+         floor) -- most long-but-not-extreme lines resolve here,
+      3. if it's still too long even shrunk, wrap the name onto extra
+         lines instead of shrinking further into illegibility, with the
+         price on the last line.
+
+    Returns (lines, font_size, price_text): `lines` is drawn top-to-bottom
+    at font_size, and price_text is right-aligned alongside the last line.
+    """
+    price_text = f"{price}{price_suffix}" if price else ""
+    gap = 6  # minimum breathing room between the name and the price
+    usable = avail_width - gap
+
+    name_w = c.stringWidth(name, font_name, size)
+    price_w = c.stringWidth(price_text, font_name, size) if price_text else 0
+
+    if usable <= 0 or name_w + price_w <= usable:
+        return [name], size, price_text
+
+    floor = 0.6
+    shrunk_scale = usable / (name_w + price_w) if (name_w + price_w) > 0 else 1.0
+    if shrunk_scale >= floor:
+        return [name], size * shrunk_scale, price_text
+
+    # Still doesn't fit even at the floor -- wrap instead of shrinking
+    # further into illegibility.
+    wrap_size = size * floor
+    lines = _wrap_text_to_width(c, name, font_name, wrap_size, avail_width)
+    last_w = c.stringWidth(lines[-1], font_name, wrap_size) if lines else 0
+    if price_text and last_w + price_w > usable:
+        lines.append("")  # price doesn't even fit next to the last wrapped line -- give it its own
+    return lines, wrap_size, price_text
+
+
+def _draw_item_line(c, name, price, x_left, x_right, y_top, item_size, font_name, price_suffix=" €"):
+    """Draws one item row (possibly wrapped across multiple lines -- see
+    _plan_item_line) with its first line's baseline at y_top, each
+    subsequent line item_size below the last. Returns the y just below the
+    last line drawn, i.e. where the next row/gap should start from."""
+    lines, line_size, price_text = _plan_item_line(c, name, price, x_right - x_left, font_name, item_size, price_suffix)
+    c.setFont(font_name, line_size)
     c.setFillColorRGB(0.05, 0.05, 0.05)
-    c.drawString(x_left, y, name)
-    if price:
-        c.drawRightString(x_right, y, f"{price}{price_suffix}")
+    y = y_top
+    for i, line in enumerate(lines):
+        c.drawString(x_left, y, line)
+        if i == len(lines) - 1 and price_text:
+            c.drawRightString(x_right, y, price_text)
+        y -= item_size
     c.setFillColorRGB(0, 0, 0)
+    return len(lines)
 
 
 class _CategorizedListFlow:
     """Tracks the y-cursor for one output PDF page and starts a new page
-    (with a '(suite)' continuation title) automatically on overflow."""
+    (with a '(suite)' continuation title) automatically on overflow.
 
-    def __init__(self, c, cfg, role_fonts, display_font_path, title_text, already_started=False):
+    A page that's too dense to fit in a single column first falls back to a
+    second column on the SAME physical page (see n_columns / _new_column)
+    before ever spilling onto an extra "(suite)" page -- see
+    generate_categorized_list_pdf for how a page's column count is decided."""
+
+    # Fixed gutter between the two columns when a page needs them. Not part
+    # of _SCALABLE_KEYS -- it's a layout gap, not text, so it stays constant
+    # regardless of the shared font shrink scale.
+    COLUMN_GAP = 26
+
+    def __init__(self, c, cfg, role_fonts, display_font_path, title_text, already_started=False, n_columns=1):
         self.c = c
         self.cfg = cfg
         # One registered font name per text role (category / subgroup / item
@@ -578,6 +655,10 @@ class _CategorizedListFlow:
         self.page_h = cfg["page_height"]
         self.margin_side = cfg["margin_side"]
         self.bottom_limit = cfg["margin_bottom"]
+        self.n_columns = max(1, n_columns)
+        self.column_index = 0
+        self.col_bounds = self._compute_column_bounds()
+        self.col_left, self.col_right = self.col_bounds[0]
         # needs_showpage: whether the canvas already has a page in progress
         # (i.e. this is not the very first page of the whole document) --
         # if so, the first _new_page() call here must still emit a showPage()
@@ -591,6 +672,21 @@ class _CategorizedListFlow:
         self.overflowed = False
         self._new_page()
 
+    def _compute_column_bounds(self):
+        """Left/right x for each column. With n_columns=1 this is just the
+        page's normal margins; with 2, the content width is split in half
+        around a fixed gutter so item rows still line up cleanly."""
+        if self.n_columns <= 1:
+            return [(self.margin_side, self.page_w - self.margin_side)]
+        content_w = (self.page_w - 2 * self.margin_side) - self.COLUMN_GAP
+        col_w = content_w / self.n_columns
+        bounds = []
+        x = self.margin_side
+        for _ in range(self.n_columns):
+            bounds.append((x, x + col_w))
+            x += col_w + self.COLUMN_GAP
+        return bounds
+
     def _new_page(self):
         if self.needs_showpage:
             self.c.showPage()
@@ -599,14 +695,26 @@ class _CategorizedListFlow:
         y = self.page_h - cfg["margin_top"]
         title = self.title_text + (" (suite)" if self.is_overflow else "")
         y = _draw_display_centered(self.c, title, self.display_font_path, cfg["page_title_size"], center_x, y)
-        self.y = y - cfg["gap_after_page_title"]
+        self.top_y = y - cfg["gap_after_page_title"]
+        self.y = self.top_y
+        self.column_index = 0
+        self.col_left, self.col_right = self.col_bounds[0]
         self.needs_showpage = True
         self.is_overflow = True
 
+    def _new_column(self):
+        self.column_index += 1
+        self.col_left, self.col_right = self.col_bounds[self.column_index]
+        self.y = self.top_y
+
     def ensure_space(self, needed):
         if self.y - needed < self.bottom_limit:
-            self.overflowed = True  # more than one page was needed -- expected for long lists, not an error
-            self._new_page()
+            if self.column_index + 1 < self.n_columns:
+                # Same physical page, next column over -- not an overflow.
+                self._new_column()
+            else:
+                self.overflowed = True  # more than one page was needed -- expected for long lists, not an error
+                self._new_page()
 
     def draw_category(self, category):
         cfg = self.cfg
@@ -617,16 +725,16 @@ class _CategorizedListFlow:
         if cat_font["raster"]:
             # Brand display face -- drawn as an image, see _draw_display_left.
             _draw_display_left(self.c, category.get("name", ""), cat_font["path"],
-                               cfg["category_size"], self.margin_side, self.y)
+                               cfg["category_size"], self.col_left, self.y)
         else:
             self.c.setFont(cat_font["name"], cfg["category_size"])
-            self.c.drawString(self.margin_side, self.y, category.get("name", ""))
+            self.c.drawString(self.col_left, self.y, category.get("name", ""))
 
         if category.get("note"):
             note_font = self.fonts["note"]
             if not note_font["raster"]:
                 self.c.setFont(note_font["name"], cfg["note_size"])
-                self.c.drawRightString(self.page_w - self.margin_side, self.y, category["note"])
+                self.c.drawRightString(self.col_right, self.y, category["note"])
         self.c.setFillColorRGB(0, 0, 0)
         self.y -= cfg["gap_after_category"]
 
@@ -637,11 +745,11 @@ class _CategorizedListFlow:
                 sub_font = self.fonts["subgroup"]
                 if sub_font["raster"]:
                     _draw_display_left(self.c, group["name"], sub_font["path"],
-                                       cfg["subgroup_size"], self.margin_side, self.y)
+                                       cfg["subgroup_size"], self.col_left, self.y)
                 else:
                     self.c.setFont(sub_font["name"], cfg["subgroup_size"])
                     self.c.setFillColorRGB(0.15, 0.15, 0.15)
-                    self.c.drawString(self.margin_side, self.y, group["name"])
+                    self.c.drawString(self.col_left, self.y, group["name"])
                     self.c.setFillColorRGB(0, 0, 0)
                 self.y -= cfg["gap_after_subgroup"]
 
@@ -649,13 +757,24 @@ class _CategorizedListFlow:
                 text = (item.get("text") or "").strip()
                 if not text:
                     continue
-                self.ensure_space(cfg["item_size"] + cfg["gap_after_item"])
-                self.y -= cfg["item_size"]
-                _draw_line_name_price(
-                    self.c, text, item.get("price", ""),
-                    self.margin_side, self.page_w - self.margin_side,
-                    self.y, self.body_font, cfg["item_size"]
+                # Plan first (an exceptionally long name+price can wrap onto
+                # an extra line -- see _plan_item_line) so ensure_space
+                # reserves the right amount of room before anything is
+                # drawn, rather than drawing a wrapped row that runs past
+                # the bottom margin.
+                plan_lines, _, _ = _plan_item_line(
+                    self.c, text, item.get("price", ""), self.col_right - self.col_left,
+                    self.body_font, cfg["item_size"]
                 )
+                row_h = cfg["item_size"] * len(plan_lines)
+                self.ensure_space(row_h + cfg["gap_after_item"])
+                self.y -= cfg["item_size"]
+                n_lines = _draw_item_line(
+                    self.c, text, item.get("price", ""),
+                    self.col_left, self.col_right,
+                    self.y, cfg["item_size"], self.body_font,
+                )
+                self.y -= cfg["item_size"] * (n_lines - 1)
                 self.y -= cfg["gap_after_item"]
 
         self.y -= cfg["gap_after_group_block"]
@@ -723,9 +842,22 @@ def _measure_categories_height(categories, cfg):
     return h
 
 
-def _page_fit_scale(categories, cfg, title_text, display_font_path):
+def _page_available_height(cfg, title_text, display_font_path):
+    """Usable vertical space for one column of content on one printed page,
+    below the title. Shared by _page_fit_scale and the column-count decision
+    in generate_categorized_list_pdf so both agree on the same number."""
+    title_h = 0.0
+    if title_text and title_text.strip():
+        _, _, title_h = _render_display_text(title_text, display_font_path, cfg["page_title_size"])
+    return (cfg["page_height"] - cfg["margin_top"] - cfg["margin_bottom"]
+            - title_h - cfg["gap_after_page_title"])
+
+
+def _page_fit_scale(categories, cfg, title_text, display_font_path, n_columns=1):
     """How much this one logical page's text/spacing would need to shrink
-    (1.0 = no shrink) to keep its content on a single printed page.
+    (1.0 = no shrink) to keep its content on a single printed page, laid
+    out across n_columns side-by-side columns (1 = the normal single-column
+    layout).
 
     The title is a rasterised display-font image, not a plain text line --
     its real inked height (with accents/descenders) can run noticeably
@@ -733,11 +865,7 @@ def _page_fit_scale(categories, cfg, title_text, display_font_path):
     assumed, or the fit estimate would under-count used space and still
     let borderline pages overflow.
     """
-    title_h = 0.0
-    if title_text and title_text.strip():
-        _, _, title_h = _render_display_text(title_text, display_font_path, cfg["page_title_size"])
-    available = (cfg["page_height"] - cfg["margin_top"] - cfg["margin_bottom"]
-                 - title_h - cfg["gap_after_page_title"])
+    available = _page_available_height(cfg, title_text, display_font_path) * max(1, n_columns)
     needed = _measure_categories_height(categories, cfg)
     if needed <= available or needed <= 0:
         return 1.0
@@ -771,18 +899,33 @@ def generate_categorized_list_pdf(content, cfg, output_path, base_dir):
 
     # Like the original InDesign file, each logical page should stay one
     # printed page -- so instead of overflowing onto a "(suite)" page when
-    # edits make a section run long, shrink text/spacing just enough to
-    # still fit. That shrink is computed ONCE across every page (the
-    # tightest-fitting page sets the scale) and applied to the whole
-    # document equally, so every page prints at the same font size instead
-    # of each page shrinking independently based on how much content it
-    # happens to have.
+    # edits make a section run long, a page that's too dense for a single
+    # column first falls back to a second column on the SAME page. Only if
+    # it's still too dense for that does it fall back to shrinking; only if
+    # it's still too dense even shrunk to the floor does it fall back to an
+    # actual extra "(suite)" page.
+    #
+    # The shrink scale itself is computed ONCE across every page (the
+    # tightest-fitting page, using whichever of 1 or 2 columns fits it
+    # better, sets the scale) and applied to the whole document equally, so
+    # every page prints at the same font size instead of each page
+    # shrinking independently based on how much content it happens to have.
+    # available_1col and needed (at unscaled cfg sizes) are cached per page
+    # here rather than recomputed later -- the title height component of
+    # available_1col comes from _render_display_text, which rasterises the
+    # title with Pillow and is too slow to call several times per page.
+    # page_title_size isn't in _SCALABLE_KEYS, so available_1col is the same
+    # at any shrink scale and this single measurement can be reused below.
     worst_scale = 1.0
+    page_metrics = []
     for page in pages:
-        page_scale = _page_fit_scale(
-            page.get("categories", []), cfg, page.get("title", ""), display_font_path
-        )
-        worst_scale = min(worst_scale, page_scale)
+        categories, title = page.get("categories", []), page.get("title", "")
+        available_1col = _page_available_height(cfg, title, display_font_path)
+        needed = _measure_categories_height(categories, cfg)
+        page_metrics.append((available_1col, needed))
+        scale_1col = 1.0 if needed <= available_1col or needed <= 0 else available_1col / needed
+        scale_2col = 1.0 if needed <= available_1col * 2 or needed <= 0 else (available_1col * 2) / needed
+        worst_scale = min(worst_scale, max(scale_1col, scale_2col))
     shared_scale = max(_MIN_SHRINK_SCALE, worst_scale)
     shared_cfg = _fit_cfg_to_scale(cfg, shared_scale)
     role_fonts = _resolve_role_fonts(shared_cfg, base_dir, ("category", "subgroup", "item", "note"))
@@ -790,9 +933,16 @@ def generate_categorized_list_pdf(content, cfg, output_path, base_dir):
     any_overflow = False
     for i, page in enumerate(pages):
         categories = page.get("categories", [])
+        title = page.get("title", "")
+        available_1col, needed_at_scale1 = page_metrics[i]
+        # A page only needs its second column if it doesn't already fit in
+        # one at the shared scale -- pages with room to spare stay
+        # single-column, matching the original one-page-one-column design.
+        fits_one_column = (needed_at_scale1 * shared_scale) <= available_1col
+        n_columns = 1 if fits_one_column else 2
         flow = _CategorizedListFlow(
-            c, shared_cfg, role_fonts, display_font_path, page.get("title", ""),
-            already_started=(i > 0),
+            c, shared_cfg, role_fonts, display_font_path, title,
+            already_started=(i > 0), n_columns=n_columns,
         )
         for category in categories:
             flow.draw_category(category)
@@ -804,8 +954,9 @@ def generate_categorized_list_pdf(content, cfg, output_path, base_dir):
     warnings = []
     if any_overflow:
         warnings.append(
-            "Even after shrinking to fit, one or more sections still ran onto "
-            "an extra page -- consider trimming the list for that page."
+            "Even split across two columns and shrunk to fit, one or more "
+            "sections still ran onto an extra page -- consider trimming the "
+            "list for that page."
         )
 
     return {"ok": True, "warnings": warnings, "path": output_path}
