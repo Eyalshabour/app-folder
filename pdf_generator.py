@@ -176,13 +176,17 @@ def _draw_crop_marks(c, x, y, w, h, sheet_w, length=5, gap=2, mid_mark=False):
     c.setLineWidth(1)
 
 
-def render_card(c, origin_x, cfg, menu_data, body_font, origin_y=0):
+def render_card(c, origin_x, cfg, menu_data, body_font, origin_y=0, wine_font=None):
     """Draws one full menu card at the given offset on the sheet.
 
     origin_y lets the caller centre the card block vertically on a sheet
     that is taller than the card (e.g. cards on a real A4 page).
 
+    wine_font: bold face used for the per-course wine line on wine-pairing
+    menus. Falls back to body_font (regular weight) if not given.
+
     Returns True if content overflowed the card height."""
+    wine_font = wine_font or body_font
     cw = cfg["card_width"]
     ch = cfg["card_height"]
     center_x = origin_x + cw / 2
@@ -237,7 +241,7 @@ def render_card(c, origin_x, cfg, menu_data, body_font, origin_y=0):
             if wine:
                 y -= cfg.get("gap_desc_to_wine", 4)
                 y = _draw_wrapped_centered(
-                    c, wine, center_x, y, max_width, body_font,
+                    c, wine, center_x, y, max_width, wine_font,
                     cfg.get("wine_size", cfg["description_size"] - 0.5),
                     cfg["description_line_height"],
                     cfg.get("wine_color", "#6b5a45"),
@@ -274,6 +278,15 @@ def generate_pdf(menu_data, cfg, output_path, base_dir):
     body_font_path = os.path.join(base_dir, cfg["fonts"]["body"])
     body_font = _register_body_font(body_font_path)
 
+    # Wine-pairing menus set the per-course wine line in a bold weight so it
+    # stands out from the dish description above it. Falls back to the
+    # regular body font if a template doesn't specify a bold face.
+    wine_bold_rel = cfg["fonts"].get("wine_bold")
+    if wine_bold_rel:
+        wine_font = _register_body_font(os.path.join(base_dir, wine_bold_rel))
+    else:
+        wine_font = body_font
+
     display_font_path = os.path.join(base_dir, cfg["fonts"]["display"])
     cfg = dict(cfg)
     cfg["fonts"] = {"display": display_font_path, "body": body_font_path}
@@ -300,7 +313,7 @@ def generate_pdf(menu_data, cfg, output_path, base_dir):
     # once the card is cut out.
     if cfg.get("vertical_center", True):
         probe = canvas.Canvas(io.BytesIO(), pagesize=(sheet_w, sheet_h))
-        _, end_y = render_card(probe, offset_x, cfg, menu_data, body_font, offset_y)
+        _, end_y = render_card(probe, offset_x, cfg, menu_data, body_font, offset_y, wine_font)
         content_top = offset_y + card_h - cfg["margin_top"]
         used = content_top - end_y
         slack = (card_h - cfg["margin_top"] - cfg["margin_bottom"]) - used
@@ -309,8 +322,8 @@ def generate_pdf(menu_data, cfg, output_path, base_dir):
 
     c = canvas.Canvas(output_path, pagesize=(sheet_w, sheet_h))
 
-    overflow_1, _ = render_card(c, offset_x, cfg, menu_data, body_font, offset_y)
-    overflow_2, _ = render_card(c, offset_x + card_w, cfg, menu_data, body_font, offset_y)
+    overflow_1, _ = render_card(c, offset_x, cfg, menu_data, body_font, offset_y, wine_font)
+    overflow_2, _ = render_card(c, offset_x + card_w, cfg, menu_data, body_font, offset_y, wine_font)
 
     if cfg.get("crop_marks", False):
         _draw_crop_marks(c, offset_x, offset_y, block_w, card_h, sheet_w, mid_mark=True)
