@@ -6,23 +6,28 @@
     },
     {
       "description": "mussels, green peas, kasu, lemon, walnuts, urfa",
-      "name": "OREZ VE AFUnA"
+      "name": "OREZ VE AFUnA",
+      "wine": "Zur \u00abLevanter\u00bb Mount Judea, Israel"
     },
     {
       "description": "tomato consomm\u00e9, tiger shrimp, smoked cucumber, lovage",
-      "name": "ADOM ADOM"
+      "name": "ADOM ADOM",
+      "wine": "Nana \u00abChardonnay\u00bb 2022, Negev, Israel"
     },
     {
       "description": "soft boiled egg, tahini foam, relish, mulukhiyah, bottarga, trout eggs, challah",
-      "name": "HAMInADOS"
+      "name": "HAMInADOS",
+      "wine": "Kechris \u00abLes Larmes du Pin\u00bb 2020, Macedonia, Greece"
     },
     {
       "description": "aged cod, fried chickpeas, girolles, parsley, shifka water",
-      "name": "PATRIYOTE"
+      "name": "PATRIYOTE",
+      "wine": "Ch\u00e2teau Musar 2018, Bekaa, Lebanon"
     },
     {
       "description": "Sweetbread, zucchini, confit garlic, mustard leaves, veal vinaigrette",
-      "name": "ris d'orloff"
+      "name": "ris d'orloff",
+      "wine": "Kavaklidere \u00abPendore\u00bb 2020, Anatolia, Turkey"
     }
   ],
   "dessert": [

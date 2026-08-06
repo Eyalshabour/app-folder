@@ -1,7 +1,7 @@
 {
   "courses": [
     {
-      "description": "langoustine, cherry, machleb - razor clams, tarama, fig gel - ayran tart, wakame, armenian cucumber",
+      "description": "yellow tail, cherry, machleb - razor clams, tarama, fig gel - ayran tart, wakame, armenian cucumber",
       "name": "TOUR In THE OLD CITY"
     },
     {
@@ -10,9 +10,9 @@
       "wine": "Hakkaisan \u00abTokubetsu Honjozo\u00bb Niigata, Japan"
     },
     {
-      "description": "tomato consomm\u00e9, carabinero, smoked cucumber, lovage",
+      "description": "tomato consomm\u00e9, tiger shrimp, smoked cucumber, lovage",
       "name": "ADOM ADOM",
-      "wine": "Holdvolgy \u00abExpression\u00bb 2019, Tokaji, Hungary"
+      "wine": "Holdvolgy \u00abVision\u00bb 2019, Tokaji, Hungary"
     },
     {
       "description": "soft boiled egg, tahini foam, relish, mulukhiyah, bottarga, trout eggs, challah",
@@ -22,17 +22,21 @@
     {
       "description": "aged cod, fried chickpeas, girolles, parsley, shifka water",
       "name": "PATRIYOTE",
-      "wine": "Okonomierat Rebholz \u00abVom Muschelkalk\u00bb 2024, Pfalz, Germany"
+      "wine": "Weingutt Knoll \u00abSmaragd\u00bb 2024, Wachau, Austria"
     },
     {
-      "description": "Sweetbread, zucchini flower, confit garlic, mustard leaves, veal vinaigrette",
+      "description": "Sweetbread, zucchini, confit garlic, mustard leaves, veal vinaigrette",
       "name": "ris d'orloff",
-      "wine": "Hudelot Baillet \u00abChambolle-Musigny Vieilles Vignes\u00bb 2023, Burgundy, France"
+      "wine": "Koehler-Ruprecht \u00abKabinett Trocken\u00bb 2024, Pfalz, Germany"
     }
   ],
   "dessert": [
     {
-      "description": "vine-leaf oil, grapes, Puffed rice, ayran ice cream",
+      "description": "water melon, feta, verbena oil, armenian cucumber sorbet",
+      "name": "AVATIACH"
+    },
+    {
+      "description": "vine-leaf oil, grapes, puffed rice, ayran ice cream",
       "name": "GEFEn"
     }
   ],

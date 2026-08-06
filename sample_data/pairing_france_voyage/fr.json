@@ -1,0 +1,44 @@
+{
+  "courses": [
+    {
+      "description": "langoustine, cerise, machleb - couteaux, tarama, figue - tarte ayran, wakame, concombre arm\u00e9nien",
+      "name": "TOUR DAnS LA VIEILLE VILLE"
+    },
+    {
+      "description": "moules, petit pois, kasu, citron, noix, urfa",
+      "name": "OREZ VE AFUnA",
+      "wine": "Bruno Paillard \u00abBlanc de Noirs\u00bb Grand Cru, Champagne"
+    },
+    {
+      "description": "consomm\u00e9 de tomate, crevette tigr\u00e9e, concombre fum\u00e9, liv\u00e8che",
+      "name": "ADOM ADOM",
+      "wine": "Domaine Damien Laureau \u00abRoche aux Moines\u00bb 2022, Savenni\u00e8res, Vall\u00e9e de la Loire"
+    },
+    {
+      "description": "oeuf mollet, mousse de tahini, relish, mulukhiyah, poutargue, oeufs de truite, challah",
+      "name": "HAMInADOS",
+      "wine": "Domaine de la Pinte \u00abSavagnin\u00bb 2018, Arbois, France"
+    },
+    {
+      "description": "cabillaud matur\u00e9, pois chiches frits, girolles, persil, eau de shifka",
+      "name": "PATRIYOTE",
+      "wine": "Ch\u00e2teau de Beaucastel \u00abRoussanne\u00bb 2022, Ch\u00e2teauneuf-du-Pape, Vall\u00e9e du Rh\u00f4ne"
+    },
+    {
+      "description": "ris de veau, fleur de courgette, ail confit, feuilles de moutarde, vinaigrette de veau",
+      "name": "ris d'orloff",
+      "wine": "Hudelot-Baillet \u00abLes Charmes\u00bb 2023, Chambolle-Musigny 1er Cru, Bourgogne"
+    }
+  ],
+  "dessert": [
+    {
+      "description": "Past\u00e8que, feta, huile de verveine, sorbet au concombre arm\u00e9nien",
+      "name": "AVATIACH"
+    },
+    {
+      "description": "Huile de feuille de vigne, raisin, riz souffl\u00e9, glace \u00e0 l'ayran",
+      "name": "GEFEn"
+    }
+  ],
+  "title": "LE VOYAGE SHABOUR"
+}

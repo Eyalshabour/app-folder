@@ -6,23 +6,28 @@
     },
     {
       "description": "moules, petit pois, kasu, citron, noix, urfa",
-      "name": "OREZ VE AFUnA"
+      "name": "OREZ VE AFUnA",
+      "wine": "Zur \u00abLevanter\u00bb Mont de Jud\u00e9e, Isra\u00ebl"
     },
     {
       "description": "consomm\u00e9 de tomate, crevette tigr\u00e9e, concombre fum\u00e9, liv\u00e8che",
-      "name": "ADOM ADOM"
+      "name": "ADOM ADOM",
+      "wine": "Nana \u00abChardonnay\u00bb 2022, N\u00e9gev, Isra\u00ebl"
     },
     {
       "description": "oeuf mollet, mousse de tahini, relish, mulukhiyah, poutargue, oeufs de truite, challah",
-      "name": "HAMInADOS"
+      "name": "HAMInADOS",
+      "wine": "Kechris \u00abLes Larmes du Pin\u00bb 2020, Mac\u00e9doine, Gr\u00e8ce"
     },
     {
       "description": "cabillaud matur\u00e9, pois chiches frits, girolles, persil, eau de shifka",
-      "name": "PATRIYOTE"
+      "name": "PATRIYOTE",
+      "wine": "Ch\u00e2teau Musar 2018, Bekaa, Liban"
     },
     {
       "description": "ris de veau, courgette, ail confit, feuilles de moutarde, vinaigrette de veau",
-      "name": "RIS D'ORLOFF"
+      "name": "ris d'orloff",
+      "wine": "Kavaklidere \u00abPendore\u00bb 2020, Anatolie, Turquie"
     }
   ],
   "dessert": [

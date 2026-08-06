@@ -1,5 +1,5 @@
 {
-  "_comment": "Layout for 'MENU DIGESTIFS' -- the original InDesign file is a single sheet with two side-by-side columns (Douceurs/Amers on the left, Digestifs on the right). This engine renders one column per page instead of side-by-side, so the two sections became two consecutive single-column pages here -- same content, same order, just stacked instead of side-by-side. Each logical page shrinks its text/spacing to stay on one printed page instead of spilling onto an extra one, same as the Wine List.",
+  "_comment": "Layout for 'MENU DIGESTIFS' -- the original InDesign file is a single sheet with two side-by-side columns (Douceurs/Amers on the left, Digestifs on the right). This engine renders one column per page instead of side-by-side, so the two sections became two consecutive single-column pages here -- same content, same order, just stacked instead of side-by-side. Every page uses the same fixed font sizes; a page too long to fit spills onto an automatic '(suite)' continuation page instead of shrinking.",
   "layout_type": "categorized_list",
   "page_width": 595.28,
   "page_height": 841.89,
@@ -8,14 +8,20 @@
   "margin_side": 65,
   "gap_after_page_title": 34,
   "gap_after_category": 10,
-  "gap_after_subgroup": 9,
+  "gap_before_subgroup": 9,
+  "gap_after_subgroup": 3,
   "gap_after_item": 4.5,
   "gap_after_group_block": 12,
+  "alignment": {
+    "page_title": "center",
+    "category": "left",
+    "subgroup": "left"
+  },
   "fonts": {
     "display": "assets/fonts/SHABOUR-SemiBold.otf",
     "body": "assets/fonts/AvenirLight.ttf",
     "category": "assets/fonts/SHABOUR-SemiBold.otf",
-    "subgroup": "assets/fonts/AvenirMedium.ttf",
+    "subgroup": "assets/fonts/AvenirHeavy.ttf",
     "item": "assets/fonts/AvenirLight.ttf",
     "note": "assets/fonts/AvenirLight.ttf"
   },

@@ -25,7 +25,7 @@ import time
 
 from flask import redirect, render_template_string, request, session, url_for
 
-_EXEMPT_PREFIXES = ("/login", "/static/")
+_EXEMPT_PREFIXES = ("/login", "/static/", "/assets/")
 
 _LOGIN_PAGE = """
 <!doctype html>
@@ -35,21 +35,33 @@ _LOGIN_PAGE = """
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Voyage Shabour -- Menu Editor</title>
   <style>
+    @font-face {
+      font-family: "Shabour";
+      src: url("/assets/fonts/SHABOUR-SemiBold.otf") format("opentype");
+      font-weight: 600;
+      font-display: swap;
+    }
     body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #fbf6ee;
            display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-    form { background: #fff; padding: 32px 28px; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-           width: 100%; max-width: 320px; box-sizing: border-box; }
-    h1 { font-size: 18px; margin: 0 0 18px; color: #5a3e2b; }
+    form { background: #fff; padding: 36px 28px 32px; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+           width: 100%; max-width: 320px; box-sizing: border-box; text-align: center; }
+    .login-logo { width: 44px; height: 44px; border-radius: 10px; background: #8a5227;
+           display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .login-logo img { width: 26px; height: 26px; filter: brightness(0) invert(1); }
+    h1 { font-family: "Shabour", -apple-system, sans-serif; font-size: 19px; font-weight: 600;
+         letter-spacing: .02em; margin: 0 0 20px; color: #3a2313; }
     input[type=password] { width: 100%; font-size: 16px; padding: 10px; border: 1px solid #ddd;
-           border-radius: 8px; box-sizing: border-box; margin-bottom: 14px; }
-    button { width: 100%; font-size: 16px; font-weight: 600; padding: 12px; border: none;
-           border-radius: 10px; background: #3a8a4c; color: #fff; cursor: pointer; }
+           border-radius: 8px; box-sizing: border-box; margin-bottom: 14px; text-align: center; }
+    button { width: 100%; font-size: 15px; font-weight: 600; padding: 12px; border: none;
+           border-radius: 999px; background: #8a5227; color: #fff; cursor: pointer; }
+    button:hover { background: #713f1c; }
     .error { color: #a33; font-size: 14px; margin-bottom: 12px; }
   </style>
 </head>
 <body>
   <form method="post" action="{{ url_for('login') }}">
-    <h1>Voyage Shabour -- Menu Editor</h1>
+    <div class="login-logo"><img src="/assets/icons/shabour_symbol.png" alt=""></div>
+    <h1>Voyage Shabour</h1>
     {% if error %}<div class="error">{{ error }}</div>{% endif %}
     <input type="password" name="password" placeholder="Password" autofocus required>
     <button type="submit">Enter</button>

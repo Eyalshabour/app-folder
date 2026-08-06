@@ -9,8 +9,8 @@
       "name": "OREZ VE AFUnA"
     },
     {
-      "description": "s\u00e9riole, carotte fum\u00e9e, bisque g\u00e9n\u00e9pi, harissa, cumin, c\u00e9lerie",
-      "name": "bisqotec"
+      "description": "consomm\u00e9 de tomate, thon, concombre fum\u00e9, liv\u00e8che",
+      "name": "ADOM ADOM"
     },
     {
       "description": "oeuf mollet, mousse de tahini, relish, mulukhiyah, poutargue, oeufs de truite, challah",
@@ -21,14 +21,18 @@
       "name": "PATRIYOTE"
     },
     {
-      "description": "rouget, poireau, sabayon bulle Tomer, fenugrec, persil",
+      "description": "dorade sebaste, poireau, sabayon bulle Tomer, fenugrec, persil",
       "name": "RED SABZI"
     }
   ],
   "dessert": [
     {
-      "description": "freekeh souffl\u00e9, croustillant baharat, cr\u00e8me poivre-canelle, sorbet citron bergamote",
-      "name": "EASY PEASY LEMOn FREEKEH"
+      "description": "Past\u00e8que, feta, huile de verveine, sorbet au concombre arm\u00e9nien",
+      "name": "AVATIACH"
+    },
+    {
+      "description": "Huile de feuille de vigne, raisin, riz souffl\u00e9, glace \u00e0 l'ayran",
+      "name": "GEFEn"
     }
   ],
   "title": "LE VOYAGE SHABOUR"

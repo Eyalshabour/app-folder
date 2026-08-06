@@ -10,7 +10,7 @@
     },
     {
       "description": "brocoli, smoked carrot, g\u00e9n\u00e9pi bisque, harissa, cumin, celery",
-      "name": "bisqotec"
+      "name": "ADOM ADOM"
     },
     {
       "description": "soft boiled egg, tahini foam, relish, mulukhiyah, bottarga, carrot caviar, challah",
@@ -26,6 +26,10 @@
     }
   ],
   "dessert": [
+    {
+      "description": "water melon, feta, verbena oil, armenian cucumber sorbet",
+      "name": "AVATIACH"
+    },
     {
       "description": "fried freekeh, baharat cake, black pepper-cinnamon cream, bergamot lemon sorbet",
       "name": "EASY PEASY LEMOn FREEKEH"
