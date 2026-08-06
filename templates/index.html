@@ -4,34 +4,49 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Menu Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <header>
-    <form method="post" action="{{ url_for('logout') }}" class="logout-form">
-      <button type="submit" class="logout-button">Log out</button>
-    </form>
-    <h1>Edit Your Menu</h1>
-    <p class="subtitle">Pick a menu above, make your changes below, then press the big green button to save.</p>
-    {% if not drive_connected %}
-    <div class="notice">Not connected to Google Drive yet &mdash; changes are saved on this computer only.</div>
-    {% endif %}
+  <header class="app-toolbar">
+    <div class="toolbar-brand">
+      <span class="toolbar-logo">VS</span>
+      <div class="toolbar-titles">
+        <span class="toolbar-title">Menu Editor</span>
+        <span class="toolbar-subtitle">Voyage Shabour</span>
+      </div>
+    </div>
+
+    <div class="toolbar-controls">
+      <div class="toolbar-field">
+        <label for="template-select">Menu</label>
+        <div class="select-wrap">
+          <select id="template-select"></select>
+          <svg class="select-caret" width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div class="toolbar-field">
+        <label>Language</label>
+        <div id="lang-tabs" class="lang-tabs"></div>
+      </div>
+    </div>
+
+    <div class="toolbar-actions">
+      <button type="button" id="admin-toggle-btn" class="icon-text-button" title="Layout settings">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" stroke="currentColor" stroke-width="1.5"/><path d="M16.2 12.3a1.4 1.4 0 00.28 1.54l.05.05a1.7 1.7 0 11-2.4 2.4l-.05-.05a1.4 1.4 0 00-1.54-.28 1.4 1.4 0 00-.85 1.28v.14a1.7 1.7 0 01-3.4 0v-.07a1.4 1.4 0 00-.9-1.28 1.4 1.4 0 00-1.55.28l-.05.05a1.7 1.7 0 11-2.4-2.4l.05-.05a1.4 1.4 0 00.28-1.54 1.4 1.4 0 00-1.28-.85h-.14a1.7 1.7 0 010-3.4h.07a1.4 1.4 0 001.28-.9 1.4 1.4 0 00-.28-1.55l-.05-.05a1.7 1.7 0 112.4-2.4l.05.05a1.4 1.4 0 001.54.28h.06a1.4 1.4 0 00.85-1.28v-.14a1.7 1.7 0 013.4 0v.07a1.4 1.4 0 00.85 1.28h.06a1.4 1.4 0 001.54-.28l.05-.05a1.7 1.7 0 112.4 2.4l-.05.05a1.4 1.4 0 00-.28 1.54v.06a1.4 1.4 0 001.28.85h.14a1.7 1.7 0 010 3.4h-.07a1.4 1.4 0 00-1.28.85z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Layout</span>
+      </button>
+      <form method="post" action="{{ url_for('logout') }}" class="logout-form">
+        <button type="submit" class="logout-button">Log out</button>
+      </form>
+    </div>
   </header>
 
-  <div class="controls-bar">
-    <div class="control">
-      <label>Menu</label>
-      <select id="template-select"></select>
-    </div>
-    <div class="control">
-      <label>Language</label>
-      <div id="lang-tabs" class="lang-tabs"></div>
-    </div>
-    <div class="control control-end">
-      <label>&nbsp;</label>
-      <button type="button" id="admin-toggle-btn" class="admin-toggle-button">⚙️ Admin</button>
-    </div>
-  </div>
+  {% if not drive_connected %}
+  <div class="notice-bar">Not connected to Google Drive yet &mdash; changes are saved on this computer only.</div>
+  {% endif %}
 
   <div id="admin-panel" class="admin-panel" hidden>
     <div class="admin-panel-header">
@@ -46,22 +61,35 @@
     </div>
   </div>
 
-  <main id="menu-root">
-    <p class="loading">Loading your menu&hellip;</p>
-  </main>
+  <div class="editor-layout">
+    <main id="menu-root">
+      <p class="loading">Loading your menu&hellip;</p>
+    </main>
 
-  <div id="preview-panel" class="preview-panel" hidden>
-    <div class="preview-panel-header">
-      <h3>Preview</h3>
-      <button type="button" id="preview-close-btn" class="preview-close-button">✕ Close preview</button>
-    </div>
-    <iframe id="preview-frame" class="preview-frame"></iframe>
+    <aside id="preview-panel" class="preview-panel">
+      <div class="preview-panel-header">
+        <h3>Live Preview</h3>
+        <div class="preview-panel-status">
+          <span id="preview-status-text" class="preview-status-text"></span>
+          <button type="button" id="preview-refresh-btn" class="icon-text-button preview-refresh-button" title="Refresh preview now">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M16.5 8.5A6.5 6.5 0 105.6 13.6M16.5 8.5V4M16.5 8.5H12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+      <div class="preview-frame-wrap">
+        <p id="preview-placeholder" class="preview-placeholder">Your menu will render here as you edit.</p>
+        <iframe id="preview-frame" class="preview-frame"></iframe>
+      </div>
+    </aside>
   </div>
 
   <div id="save-bar">
-    <button id="preview-btn" class="preview-button">👁 Preview</button>
-    <button id="save-btn" class="save-button">💾 Save &amp; Create Print PDF</button>
     <div id="save-status"></div>
+    <button id="save-btn" class="save-button">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15.8 3.3H5.2c-1 0-1.9.8-1.9 1.9v9.6c0 1 .8 1.9 1.9 1.9h9.6c1 0 1.9-.8 1.9-1.9V6.2l-2.9-2.9z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M13.3 16.7v-5H6.7v5M6.7 3.3v3.3h5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+      <span>Save &amp; Create Print PDF</span>
+    </button>
   </div>
 
   <template id="title-template">
@@ -113,6 +141,13 @@
     <div class="spacer-row">
       <span class="spacer-label">— blank space —</span>
       <button type="button" class="remove-item-button" title="Remove this spacer">✕</button>
+    </div>
+  </template>
+
+  <template id="heading-row-template">
+    <div class="heading-row">
+      <input type="text" class="heading-input" placeholder="e.g. Champagnes" />
+      <button type="button" class="remove-item-button" title="Remove this sub-heading">✕</button>
     </div>
   </template>
 

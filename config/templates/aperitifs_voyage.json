@@ -19,7 +19,8 @@
   "footer_line_gap": 3,
   "fonts": {
     "display": "assets/fonts/SHABOUR-SemiBold.otf",
-    "body": "assets/fonts/AvenirBook.ttf"
+    "body": "assets/fonts/AvenirBook.ttf",
+    "heading": "assets/fonts/AvenirMedium.ttf"
   },
   "divider_icon": "assets/icons/shabour_symbol.png",
   "divider_icon_height": 13,
@@ -31,5 +32,5 @@
   "footer_size": 6,
   "sheet_width": 841.89,
   "sheet_height": 595.28,
-  "crop_marks": true
+  "crop_marks": false
 }

@@ -12,7 +12,8 @@
   "gap_desc_to_wine": 3,
   "fonts": {
     "display": "assets/fonts/SHABOUR-SemiBold.otf",
-    "body": "assets/fonts/AvenirBook.ttf"
+    "body": "assets/fonts/AvenirBook.ttf",
+    "wine_bold": "assets/fonts/AvenirHeavy.ttf"
   },
   "divider_icon": "assets/icons/shabour_symbol.png",
   "divider_icon_height": 13,
@@ -25,5 +26,5 @@
   "wine_color": "#6b5a45",
   "sheet_width": 841.89,
   "sheet_height": 595.28,
-  "crop_marks": true
+  "crop_marks": false
 }

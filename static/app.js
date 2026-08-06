@@ -5,15 +5,16 @@ const itemTpl = document.getElementById("item-template");
 const simpleFieldTpl = document.getElementById("simple-field-template");
 const lineItemTpl = document.getElementById("line-item-template");
 const spacerRowTpl = document.getElementById("spacer-row-template");
+const headingRowTpl = document.getElementById("heading-row-template");
 const saveBtn = document.getElementById("save-btn");
 const saveStatus = document.getElementById("save-status");
 const templateSelect = document.getElementById("template-select");
 const langTabs = document.getElementById("lang-tabs");
 
-const previewBtn = document.getElementById("preview-btn");
-const previewPanel = document.getElementById("preview-panel");
 const previewFrame = document.getElementById("preview-frame");
-const previewCloseBtn = document.getElementById("preview-close-btn");
+const previewPlaceholder = document.getElementById("preview-placeholder");
+const previewStatusText = document.getElementById("preview-status-text");
+const previewRefreshBtn = document.getElementById("preview-refresh-btn");
 
 const adminToggleBtn = document.getElementById("admin-toggle-btn");
 const adminPanel = document.getElementById("admin-panel");
@@ -169,58 +170,125 @@ function buildMoveControls(arr, index, label) {
   return wrap;
 }
 
+// Which page of the categorized list (Wine List, Digestifs) is currently
+// being edited. Reset to 0 whenever a menu is (re)loaded -- see loadMenu().
+let currentCatlistPageIndex = 0;
+
 function renderCategorizedListMenu() {
   if (!menuState.pages) menuState.pages = [];
+  if (currentCatlistPageIndex >= menuState.pages.length) {
+    currentCatlistPageIndex = Math.max(0, menuState.pages.length - 1);
+  }
 
   const wrap = document.createElement("div");
   wrap.className = "catlist-wrap";
 
+  // Page tab strip -- edit one page at a time (like the language tabs
+  // above) instead of scrolling through every page at once.
+  const tabs = document.createElement("div");
+  tabs.className = "catlist-page-tabs";
   menuState.pages.forEach((page, pIdx) => {
-    wrap.appendChild(buildPageBlock(page, pIdx));
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "catlist-page-tab" + (pIdx === currentCatlistPageIndex ? " active" : "");
+    tab.textContent = page.title || `Page ${pIdx + 1}`;
+    tab.addEventListener("click", () => {
+      currentCatlistPageIndex = pIdx;
+      renderMenu();
+    });
+    tabs.appendChild(tab);
   });
 
-  const addPageBtn = document.createElement("button");
-  addPageBtn.type = "button";
-  addPageBtn.className = "add-item-button";
-  addPageBtn.textContent = "+ Add a Page";
-  addPageBtn.addEventListener("click", () => {
+  const addPageTab = document.createElement("button");
+  addPageTab.type = "button";
+  addPageTab.className = "catlist-page-tab catlist-page-tab-add";
+  addPageTab.textContent = "+ Page";
+  addPageTab.title = "Add a new page";
+  addPageTab.addEventListener("click", () => {
     menuState.pages.push({ title: "New Page", categories: [] });
+    currentCatlistPageIndex = menuState.pages.length - 1;
     renderMenu();
   });
-  wrap.appendChild(addPageBtn);
+  tabs.appendChild(addPageTab);
+
+  wrap.appendChild(tabs);
+
+  if (menuState.pages.length) {
+    wrap.appendChild(buildPageEditor(menuState.pages[currentCatlistPageIndex], currentCatlistPageIndex));
+  } else {
+    const empty = document.createElement("p");
+    empty.className = "admin-empty";
+    empty.textContent = 'No pages yet -- click "+ Page" to add one.';
+    wrap.appendChild(empty);
+  }
 
   root.appendChild(wrap);
 }
 
-function buildPageBlock(page, pIdx) {
-  const details = document.createElement("details");
-  details.className = "catlist-page";
-  details.open = false;
+function buildPageMoveControls(pIdx) {
+  const wrap = document.createElement("div");
+  wrap.className = "move-controls";
 
-  const summary = document.createElement("summary");
+  const up = document.createElement("button");
+  up.type = "button";
+  up.className = "move-button";
+  up.textContent = "▲";
+  up.title = "Move this page up";
+  up.disabled = pIdx === 0;
+  up.addEventListener("click", () => {
+    if (moveInArray(menuState.pages, pIdx, -1)) {
+      currentCatlistPageIndex = pIdx - 1;
+      renderMenu();
+    }
+  });
+
+  const down = document.createElement("button");
+  down.type = "button";
+  down.className = "move-button";
+  down.textContent = "▼";
+  down.title = "Move this page down";
+  down.disabled = pIdx === menuState.pages.length - 1;
+  down.addEventListener("click", () => {
+    if (moveInArray(menuState.pages, pIdx, 1)) {
+      currentCatlistPageIndex = pIdx + 1;
+      renderMenu();
+    }
+  });
+
+  wrap.appendChild(up);
+  wrap.appendChild(down);
+  return wrap;
+}
+
+function buildPageEditor(page, pIdx) {
+  const panel = document.createElement("div");
+  panel.className = "catlist-page-panel";
+
+  const header = document.createElement("div");
+  header.className = "catlist-page-panel-header";
+
   const titleInput = document.createElement("input");
   titleInput.type = "text";
   titleInput.className = "catlist-page-title-input";
   titleInput.value = page.title || "";
   titleInput.placeholder = "Page title";
-  titleInput.addEventListener("click", e => e.stopPropagation());
   titleInput.addEventListener("input", () => { page.title = titleInput.value; });
-  summary.appendChild(titleInput);
-  summary.appendChild(buildMoveControls(menuState.pages, pIdx, "page"));
+  header.appendChild(titleInput);
+
+  header.appendChild(buildPageMoveControls(pIdx));
 
   const removeBtn = document.createElement("button");
   removeBtn.type = "button";
   removeBtn.className = "remove-item-button";
   removeBtn.title = "Remove this page";
   removeBtn.textContent = "✕";
-  removeBtn.addEventListener("click", e => {
-    e.stopPropagation();
-    e.preventDefault();
+  removeBtn.addEventListener("click", () => {
     menuState.pages.splice(pIdx, 1);
+    currentCatlistPageIndex = Math.max(0, pIdx - 1);
     renderMenu();
   });
-  summary.appendChild(removeBtn);
-  details.appendChild(summary);
+  header.appendChild(removeBtn);
+  panel.appendChild(header);
 
   const body = document.createElement("div");
   body.className = "catlist-page-body";
@@ -240,8 +308,8 @@ function buildPageBlock(page, pIdx) {
   });
   body.appendChild(addCatBtn);
 
-  details.appendChild(body);
-  return details;
+  panel.appendChild(body);
+  return panel;
 }
 
 function buildCategoryBlock(page, cat, cIdx) {
@@ -397,6 +465,14 @@ function renderCourseMenu() {
   titleInput.addEventListener("input", () => { menuState.title = titleInput.value; });
   root.appendChild(titleNode);
 
+  const subtitleNode = simpleFieldTpl.content.cloneNode(true);
+  const subtitleInput = subtitleNode.querySelector(".simple-field-input");
+  subtitleNode.querySelector(".simple-field-label").textContent = "Subtitle (optional)";
+  subtitleInput.value = menuState.subtitle || "";
+  subtitleInput.placeholder = "Subtitle (optional)";
+  subtitleInput.addEventListener("input", () => { menuState.subtitle = subtitleInput.value; });
+  root.appendChild(subtitleNode);
+
   root.appendChild(buildGroup("Courses", "courses"));
   root.appendChild(buildGroup("Dessert", "dessert"));
 }
@@ -404,6 +480,7 @@ function renderCourseMenu() {
 // Simple text fields shown at the top of a price-card menu, in order.
 const PRICE_CARD_FIELDS = [
   { key: "title", label: "Menu Title" },
+  { key: "subtitle", label: "Subtitle (optional)" },
   { key: "price", label: "Price" },
   { key: "subprice", label: "Additional Price Line (optional)" },
   { key: "accord_header", label: "Wine Pairing Heading" },
@@ -420,10 +497,49 @@ function renderPriceCardMenu() {
     input.placeholder = label;
     input.addEventListener("input", () => { menuState[key] = input.value; });
     root.appendChild(node);
+
+    // Wine Pairing Price is one line by default; let the user add more
+    // (e.g. a separate "Doucers" price) instead of cramming them into one
+    // field with a manual "/" separator.
+    if (key === "accord_price") {
+      root.appendChild(buildAccordExtraLines());
+    }
   });
 
   root.appendChild(buildLinesGroup("Drinks List", "items"));
   root.appendChild(buildFooterGroup());
+}
+
+function buildAccordExtraLines() {
+  const node = groupTpl.content.cloneNode(true);
+  node.querySelector(".group-heading").textContent = "Additional Wine Pairing Lines (optional)";
+  const itemsList = node.querySelector(".items-list");
+  const addBtn = node.querySelector(".add-item-button");
+  addBtn.textContent = "+ Add a Line";
+
+  if (!menuState.accord_extra_lines) menuState.accord_extra_lines = [];
+
+  menuState.accord_extra_lines.forEach((text, iIdx) => {
+    const row = lineItemTpl.content.cloneNode(true);
+    const input = row.querySelector(".line-input");
+    input.value = text || "";
+    input.placeholder = "e.g. Doucers 49 €";
+    input.addEventListener("input", () => { menuState.accord_extra_lines[iIdx] = input.value; });
+    const removeBtn = row.querySelector(".remove-item-button");
+    removeBtn.parentNode.insertBefore(buildMoveControls(menuState.accord_extra_lines, iIdx, "line"), removeBtn);
+    removeBtn.addEventListener("click", () => {
+      menuState.accord_extra_lines.splice(iIdx, 1);
+      renderMenu();
+    });
+    itemsList.appendChild(row);
+  });
+
+  addBtn.addEventListener("click", () => {
+    menuState.accord_extra_lines.push("");
+    renderMenu();
+  });
+
+  return node;
 }
 
 function buildLinesGroup(heading, key) {
@@ -444,6 +560,16 @@ function buildLinesGroup(heading, key) {
     renderMenu();
   });
 
+  const headingBtn = document.createElement("button");
+  headingBtn.type = "button";
+  headingBtn.className = "add-item-button add-heading-button";
+  headingBtn.textContent = "+ Add a Sub-heading (e.g. Champagnes)";
+  headingBtn.addEventListener("click", () => {
+    menuState[key].push({ heading: "" });
+    renderMenu();
+  });
+  node.querySelector(".menu-group").appendChild(headingBtn);
+
   const spacerBtn = document.createElement("button");
   spacerBtn.type = "button";
   spacerBtn.className = "add-item-button add-spacer-button";
@@ -463,6 +589,22 @@ function buildLineRow(key, iIdx, line) {
     const removeBtn = node.querySelector(".remove-item-button");
     removeBtn.parentNode.insertBefore(buildMoveControls(menuState[key], iIdx, "line"), removeBtn);
     removeBtn.addEventListener("click", () => {
+<<<<<<< HEAD
+=======
+      menuState[key].splice(iIdx, 1);
+      renderMenu();
+    });
+    return node;
+  }
+  if (line.heading !== undefined) {
+    const node = headingRowTpl.content.cloneNode(true);
+    const input = node.querySelector(".heading-input");
+    input.value = line.heading || "";
+    input.addEventListener("input", () => { menuState[key][iIdx].heading = input.value; });
+    const removeBtn = node.querySelector(".remove-item-button");
+    removeBtn.parentNode.insertBefore(buildMoveControls(menuState[key], iIdx, "sub-heading"), removeBtn);
+    removeBtn.addEventListener("click", () => {
+>>>>>>> origin/main
       menuState[key].splice(iIdx, 1);
       renderMenu();
     });
@@ -584,32 +726,52 @@ async function loadMenu() {
   const res = await fetch(`/api/menu?template=${encodeURIComponent(currentTemplateId)}&language=${encodeURIComponent(currentLanguage)}`);
   const data = await res.json();
   menuState = data.menu;
+  currentCatlistPageIndex = 0;
   renderMenu();
-  closePreviewPanel();
+  resetLivePreview();
+  refreshPreview({ silent: true });
   await loadAdminFields();
 }
 
 // ---------------------------------------------------------------------
-// Preview: renders whatever is currently in the editor (unsaved changes
-// included) to a scratch PDF and shows it inline, without creating a new
-// dated file or overwriting the saved content.
+// Live preview: a docked canvas next to the form, like a design tool.
+// Renders whatever is currently in the editor (unsaved changes included)
+// to a scratch PDF and shows it inline, without creating a new dated file
+// or overwriting the saved content. Auto-refreshes shortly after every
+// edit (debounced, via scheduleLivePreview -- wired up near the bottom of
+// this file), and can also be triggered immediately by the Preview buttons.
 // ---------------------------------------------------------------------
 
-function openPreviewPanel(url) {
-  previewFrame.src = url;
-  previewPanel.hidden = false;
-  previewPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-}
+let previewDebounceTimer = null;
+let previewRequestId = 0; // guards against a slow, stale response clobbering a newer one
 
-function closePreviewPanel() {
-  previewPanel.hidden = true;
+function resetLivePreview() {
+  clearTimeout(previewDebounceTimer);
   previewFrame.src = "about:blank";
+  previewPlaceholder.hidden = false;
+  previewStatusText.textContent = "";
 }
 
-async function runPreview(button) {
-  const originalText = button.textContent;
-  button.disabled = true;
-  button.textContent = "Rendering…";
+function scheduleLivePreview() {
+  clearTimeout(previewDebounceTimer);
+  previewStatusText.textContent = "Editing…";
+  previewDebounceTimer = setTimeout(() => refreshPreview({ silent: true }), 900);
+}
+
+async function refreshPreview({ silent = false, button = null } = {}) {
+  clearTimeout(previewDebounceTimer);
+  const myRequestId = ++previewRequestId;
+
+  // Toggle a loading class rather than swapping button.textContent -- some
+  // of these buttons (the preview refresh button) have an SVG icon plus a
+  // label inside, and overwriting textContent would silently delete the
+  // icon node the first time this runs.
+  if (button) {
+    button.disabled = true;
+    button.classList.add("is-loading");
+  }
+  if (silent) previewStatusText.textContent = "Updating preview…";
+
   try {
     const res = await fetch(`/api/preview?template=${encodeURIComponent(currentTemplateId)}&language=${encodeURIComponent(currentLanguage)}`, {
       method: "POST",
@@ -617,21 +779,44 @@ async function runPreview(button) {
       body: JSON.stringify(menuState),
     });
     const result = await res.json();
+    if (myRequestId !== previewRequestId) return; // superseded by a newer edit
     if (!result.ok) {
-      alert("Couldn't render a preview: " + (result.error || "unknown error"));
+      previewStatusText.textContent = "Couldn't render preview.";
+      if (!silent) alert("Couldn't render a preview: " + (result.error || "unknown error"));
       return;
     }
-    openPreviewPanel(result.preview_url);
+    // The server writes the preview PDF to the same filename every time
+    // (only the ?t=<date> cache-buster changes, once a day), so re-setting
+    // .src to an identical string wouldn't reload the iframe on a second
+    // edit within the same day. Add a per-request cache-buster so every
+    // refresh actually shows the latest render.
+    const bustUrl = result.preview_url + (result.preview_url.includes("?") ? "&" : "?") + "r=" + myRequestId;
+    previewFrame.src = bustUrl;
+    previewPlaceholder.hidden = true;
+    previewStatusText.textContent = "";
   } catch (e) {
-    alert("Couldn't render a preview. Please try again.");
+    if (myRequestId !== previewRequestId) return;
+    previewStatusText.textContent = "Couldn't render preview.";
+    if (!silent) alert("Couldn't render a preview. Please try again.");
   } finally {
-    button.disabled = false;
-    button.textContent = originalText;
+    if (myRequestId === previewRequestId && button) {
+      button.disabled = false;
+      button.classList.remove("is-loading");
+    }
   }
 }
 
-previewBtn.addEventListener("click", () => runPreview(previewBtn));
-previewCloseBtn.addEventListener("click", closePreviewPanel);
+previewRefreshBtn.addEventListener("click", () => refreshPreview({ button: previewRefreshBtn }));
+
+// Any edit inside the form -- typing, or clicking add/remove/reorder/spacer
+// buttons -- schedules a debounced live-preview refresh, so the canvas
+// stays in sync without a manual click. Delegated on the container (rather
+// than on each individual field) so it keeps working across every
+// renderMenu() rebuild, and for fields added later.
+root.addEventListener("input", scheduleLivePreview);
+root.addEventListener("click", e => {
+  if (e.target.closest("button")) scheduleLivePreview();
+});
 
 // ---------------------------------------------------------------------
 // Admin panel: lets a technical user tune font sizes, margins and gaps
@@ -789,7 +974,7 @@ adminToggleBtn.addEventListener("click", () => {
 adminSaveBtn.addEventListener("click", saveAdminFields);
 adminPreviewBtn.addEventListener("click", async () => {
   await saveAdminFields();
-  await runPreview(adminPreviewBtn);
+  await refreshPreview({ button: adminPreviewBtn });
 });
 
 async function saveMenu() {
@@ -805,13 +990,13 @@ async function saveMenu() {
     });
     const result = await res.json();
 
-    let html = `<div class="ok">✅ Saved! New menu ready: <a href="${result.download_url}" target="_blank">${result.filename}</a></div>`;
+    let html = `<div class="ok">Saved. New menu ready: <a href="${result.download_url}" target="_blank">${result.filename}</a></div>`;
     if (result.drive_link) {
       html += `<div class="ok">Uploaded to Google Drive.</div>`;
     }
     if (result.warnings && result.warnings.length) {
       result.warnings.forEach(w => {
-        html += `<div class="warn">⚠️ ${w}</div>`;
+        html += `<div class="warn">${w}</div>`;
       });
     }
     saveStatus.innerHTML = html;
