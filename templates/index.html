@@ -46,16 +46,24 @@
     </div>
   </div>
 
-  <main id="menu-root">
-    <p class="loading">Loading your menu&hellip;</p>
-  </main>
+  <div class="editor-layout">
+    <main id="menu-root">
+      <p class="loading">Loading your menu&hellip;</p>
+    </main>
 
-  <div id="preview-panel" class="preview-panel" hidden>
-    <div class="preview-panel-header">
-      <h3>Preview</h3>
-      <button type="button" id="preview-close-btn" class="preview-close-button">✕ Close preview</button>
-    </div>
-    <iframe id="preview-frame" class="preview-frame"></iframe>
+    <aside id="preview-panel" class="preview-panel">
+      <div class="preview-panel-header">
+        <h3>Live Preview</h3>
+        <div class="preview-panel-status">
+          <span id="preview-status-text" class="preview-status-text"></span>
+          <button type="button" id="preview-refresh-btn" class="preview-refresh-button">↻ Refresh now</button>
+        </div>
+      </div>
+      <div class="preview-frame-wrap">
+        <p id="preview-placeholder" class="preview-placeholder">Your menu will render here as you edit.</p>
+        <iframe id="preview-frame" class="preview-frame"></iframe>
+      </div>
+    </aside>
   </div>
 
   <div id="save-bar">
