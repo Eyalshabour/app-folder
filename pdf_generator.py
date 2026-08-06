@@ -719,13 +719,9 @@ def _measure_categories_height(categories, cfg):
     return h
 
 
-def _fit_page_cfg(categories, cfg, title_text, display_font_path):
-    """Like the original InDesign file, each logical page should stay one
-    printed page -- so instead of overflowing onto a "(suite)" page when
-    edits make a section run long, shrink its text/spacing just enough to
-    still fit. Falls back to the original sizes if the content already fits,
-    and only lets the old overflow safety net kick in if even the smallest
-    readable size wouldn't be enough.
+def _page_fit_scale(categories, cfg, title_text, display_font_path):
+    """How much this one logical page's text/spacing would need to shrink
+    (1.0 = no shrink) to keep its content on a single printed page.
 
     The title is a rasterised display-font image, not a plain text line --
     its real inked height (with accents/descenders) can run noticeably
@@ -740,12 +736,17 @@ def _fit_page_cfg(categories, cfg, title_text, display_font_path):
                  - title_h - cfg["gap_after_page_title"])
     needed = _measure_categories_height(categories, cfg)
     if needed <= available or needed <= 0:
+        return 1.0
+    return available / needed
+
+
+def _fit_cfg_to_scale(cfg, scale):
+    if scale >= 1.0:
         return cfg
-    scale = max(_MIN_SHRINK_SCALE, available / needed)
-    page_cfg = dict(cfg)
+    scaled_cfg = dict(cfg)
     for key in _SCALABLE_KEYS:
-        page_cfg[key] = cfg[key] * scale
-    return page_cfg
+        scaled_cfg[key] = cfg[key] * scale
+    return scaled_cfg
 
 
 def generate_categorized_list_pdf(content, cfg, output_path, base_dir):
@@ -762,17 +763,31 @@ def generate_categorized_list_pdf(content, cfg, output_path, base_dir):
 
     c = canvas.Canvas(output_path, pagesize=(cfg["page_width"], cfg["page_height"]))
 
-    any_overflow = False
     pages = content.get("pages", [])
+
+    # Like the original InDesign file, each logical page should stay one
+    # printed page -- so instead of overflowing onto a "(suite)" page when
+    # edits make a section run long, shrink text/spacing just enough to
+    # still fit. That shrink is computed ONCE across every page (the
+    # tightest-fitting page sets the scale) and applied to the whole
+    # document equally, so every page prints at the same font size instead
+    # of each page shrinking independently based on how much content it
+    # happens to have.
+    worst_scale = 1.0
+    for page in pages:
+        page_scale = _page_fit_scale(
+            page.get("categories", []), cfg, page.get("title", ""), display_font_path
+        )
+        worst_scale = min(worst_scale, page_scale)
+    shared_scale = max(_MIN_SHRINK_SCALE, worst_scale)
+    shared_cfg = _fit_cfg_to_scale(cfg, shared_scale)
+    role_fonts = _resolve_role_fonts(shared_cfg, base_dir, ("category", "subgroup", "item", "note"))
+
+    any_overflow = False
     for i, page in enumerate(pages):
         categories = page.get("categories", [])
-        # Fit this page's content to its one printed page (shrinking text
-        # and spacing together) rather than spilling onto an extra page --
-        # the user does not want new pages created automatically.
-        page_cfg = _fit_page_cfg(categories, cfg, page.get("title", ""), display_font_path)
-        role_fonts = _resolve_role_fonts(page_cfg, base_dir, ("category", "subgroup", "item", "note"))
         flow = _CategorizedListFlow(
-            c, page_cfg, role_fonts, display_font_path, page.get("title", ""),
+            c, shared_cfg, role_fonts, display_font_path, page.get("title", ""),
             already_started=(i > 0),
         )
         for category in categories:
