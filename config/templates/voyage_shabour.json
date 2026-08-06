@@ -9,6 +9,12 @@
   "gap_after_divider": 22,
   "gap_between_courses": 16,
   "gap_name_to_desc": 5,
+  "alignment": {
+    "title": "center",
+    "subtitle": "center",
+    "course_name": "center",
+    "description": "center"
+  },
   "fonts": {
     "display": "assets/fonts/SHABOUR-SemiBold.otf",
     "body": "assets/fonts/AvenirBook.ttf"

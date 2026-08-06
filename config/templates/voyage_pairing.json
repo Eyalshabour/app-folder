@@ -10,6 +10,12 @@
   "gap_between_courses": 11,
   "gap_name_to_desc": 4,
   "gap_desc_to_wine": 3,
+  "alignment": {
+    "title": "center",
+    "subtitle": "center",
+    "course_name": "center",
+    "description": "center"
+  },
   "fonts": {
     "display": "assets/fonts/SHABOUR-SemiBold.otf",
     "body": "assets/fonts/AvenirBook.ttf",

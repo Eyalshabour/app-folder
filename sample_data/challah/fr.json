@@ -1,0 +1,56 @@
+{
+  "ingredients": [
+    {
+      "name": "EAU",
+      "qty": "1,25 kg"
+    },
+    {
+      "name": "FARINE",
+      "qty": "2,5 kg"
+    },
+    {
+      "name": "LEVURE",
+      "qty": "75 g"
+    },
+    {
+      "name": "SUCRE",
+      "qty": "150 g"
+    },
+    {
+      "name": "SEL",
+      "qty": "75 g"
+    },
+    {
+      "name": "HUILE",
+      "qty": "255 g"
+    },
+    {
+      "name": "OEUFS",
+      "qty": "2"
+    },
+    {
+      "name": "JAUNES D'OEUFS",
+      "qty": "2 + 10 g D'EAU"
+    },
+    {
+      "name": "GRAINES DE CORIANDRE",
+      "qty": "30 g"
+    },
+    {
+      "name": "GRAINES DE SESAME",
+      "qty": "30 g"
+    },
+    {
+      "name": "GRAINES DE SESAME NOIRES",
+      "qty": "30 g"
+    }
+  ],
+  "method": [
+    "MELANGER L'EAU, LA FARINE, LA LEVURE, LE SUCRE ET LE SEL. AJOUTER LENTEMENT L'HUILE ET LES OEUFS.",
+    "LAISSER LA PATE LEVER UNE NUIT ENTIERE AU REFRIGERATEUR;",
+    "DIVISER EN PORTIONS DE 80 g ET LES PLACER DANS LES MOULES. LAISSER A NOUVEAU LEVER LA PATE DURANT 2 HEURES.",
+    "LES BADIGEONNER DE JAUNE D'OEUF ET LES PARSEMER DE GRAINES DE SESAME ET CORIANDRE.",
+    "CUIRE 9 MINUTES A 180\u00b0"
+  ],
+  "title": "LA CHALLAH SHABOUR"
+}
